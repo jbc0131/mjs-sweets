@@ -1524,6 +1524,22 @@
  font-size: 0.78rem;
  letter-spacing: 0.02em;
  }
+ .checkout-success-sandbox-note {
+ background: #FFF8DC;
+ border: 1px solid #F5E6A3;
+ color: #6B5500;
+ padding: 0.75rem 1rem;
+ border-radius: 12px;
+ font-size: 0.82rem;
+ line-height: 1.5;
+ margin-bottom: 1.2rem;
+ text-align: left;
+ }
+ .checkout-success-sandbox-note a {
+ color: #6B5500;
+ font-weight: 700;
+ text-decoration: underline;
+ }
  .checkout-success-actions {
  display: flex;
  gap: 0.75rem;
@@ -2064,6 +2080,9 @@
  <h3>Order placed!</h3>
  <p class="checkout-success-msg">Thanks for ordering, <span id="successName"></span>. Maddie will text you to confirm pickup details.</p>
  <p class="checkout-success-meta">Order ID: <code id="successOrderId"></code></p>
+ <p class="checkout-success-sandbox-note" id="successSandboxNote" hidden>
+ 🧪 Sandbox order — receipt previews aren't publicly hosted in test mode. View it in your <a href="https://app.squareupsandbox.com/dashboard/sales/transactions" target="_blank" rel="noopener">Sandbox dashboard</a>. In production, customers will see a real Square receipt here.
+ </p>
  <div class="checkout-success-actions">
  <a class="btn btn-primary" id="successReceiptLink" target="_blank" rel="noopener">View Square Receipt →</a>
  <button class="btn btn-secondary" onclick="closeCheckoutModal()">Close</button>
@@ -2774,12 +2793,21 @@
    document.getElementById('checkoutSuccessView').hidden = false;
    document.getElementById('successName').textContent = name.split(' ')[0] || name;
    document.getElementById('successOrderId').textContent = data.orderId || '—';
+
    const link = document.getElementById('successReceiptLink');
-   if (data.receiptUrl) {
+   const sandboxNote = document.getElementById('successSandboxNote');
+   const isProduction = squareConfig?.environment === 'production';
+
+   if (isProduction && data.receiptUrl) {
+     // Production: Square hosts a public receipt page customers can view
      link.href = data.receiptUrl;
      link.style.display = '';
+     if (sandboxNote) sandboxNote.hidden = true;
    } else {
+     // Sandbox: receipt URLs Square returns aren't publicly hosted in test mode.
+     // Hide the broken button and explain.
      link.style.display = 'none';
+     if (sandboxNote) sandboxNote.hidden = false;
    }
  }
 
