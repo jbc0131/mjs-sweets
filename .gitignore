@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Local env (NEVER commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Vercel
+.vercel
+
+# Editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build artifacts
+dist/
+build/
