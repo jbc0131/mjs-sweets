@@ -50,6 +50,25 @@ Go to https://developer.squareup.com/apps, sign in with the Square account that 
 - [ ] Success state: show order ID + Square receipt URL, clear that cart group, leave others intact
 - [ ] Failure state: surface Square's error message inline, do NOT clear the cart
 
+### 3.5. Apple Pay domain verification (one-time setup)
+
+Apple Pay requires Square to verify that you control the domain it's running on. Google Pay needs no extra setup.
+
+**For sandbox testing:**
+
+1. Square Developer Dashboard → MJ's Sweets Website → **Sandbox** tab → **Apple Pay** → **Web** in left sidebar.
+2. Click **Add a domain** → enter your Vercel URL (e.g., `mjs-sweets-jbc0131s-projects.vercel.app`).
+3. Square gives you a **domain association file** — download it.
+4. Save the file at `~/Desktop/MJS-Sweets/.well-known/apple-developer-merchantid-domain-association` (no extension).
+5. Commit and push: `git add . && git commit -m "Apple Pay domain verification file" && git push`.
+6. Wait for Vercel to redeploy (~30s).
+7. Verify the file is accessible: visit `https://your-vercel-url/.well-known/apple-developer-merchantid-domain-association` in a browser — you should see the file contents (a long string of characters), not a 404.
+8. Back in Square dashboard, click **Verify** next to your domain. Should turn green.
+
+**For production:** Repeat the same steps on the Production tab of the Square Developer Dashboard, registering your real custom domain (e.g., `mjssweetsla.com`). The file from the production tab is *different* from the sandbox file.
+
+**Important:** Vercel serves `.well-known/` files automatically as long as they're at the project root. If you ever deploy this site somewhere that needs an explicit MIME type (some hosts), set the `Content-Type` to `application/octet-stream` for that path.
+
 ### 4. Sandbox testing
 
 - [ ] Test cards from Square: `4111 1111 1111 1111` (success), `4000 0000 0000 0002` (decline), `4000 0000 0000 0119` (CVV failure) — full list at https://developer.squareup.com/docs/devtools/sandbox/payments
@@ -58,6 +77,9 @@ Go to https://developer.squareup.com/apps, sign in with the Square account that 
 - [ ] Test declined card → confirm error surfaces, cart not cleared
 - [ ] Test missing fields → confirm 400 errors are user-friendly
 - [ ] Test inventory caps (if you decide to enable Stockable on a sold-out item, it should reject)
+- [ ] Test Apple Pay (Safari on Mac with Wallet card, or iPhone Safari) — button should appear above card form, tap → Apple Pay sheet → Touch/Face ID → success
+- [ ] Test Google Pay (Chrome with a saved Google Pay card) — button should appear, click → Google Pay sheet → success
+- [ ] On Firefox/Edge/non-Apple-Pay browsers — only Google Pay (or just card) should appear, no broken Apple Pay button
 
 ### 5. Production rollout
 

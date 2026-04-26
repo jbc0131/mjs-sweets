@@ -1420,6 +1420,60 @@
  }
  .checkout-card-container.is-focused { border-color: var(--hot-pink); }
 
+ /* Wallet payment methods (Apple Pay, Google Pay) */
+ .checkout-wallets {
+ display: flex;
+ flex-direction: column;
+ gap: 0.6rem;
+ margin-bottom: 0.5rem;
+ }
+ .checkout-wallets > button:not([hidden]),
+ .checkout-wallets > div:not([hidden]) { width: 100%; }
+
+ /* Apple Pay button — Safari renders this via the -apple-pay-button
+  appearance pseudo-element. Other browsers see nothing useful, which
+  is fine because we hide the button via JS unless Square confirms
+  Apple Pay is available on this device. */
+ .apple-pay-button {
+ -webkit-appearance: -apple-pay-button;
+ -apple-pay-button-type: pay;
+ -apple-pay-button-style: black;
+ display: block;
+ width: 100%;
+ height: 48px;
+ border-radius: 12px;
+ border: none;
+ cursor: pointer;
+ padding: 0;
+ background: transparent;
+ }
+
+ /* Google Pay container — Square's SDK renders the official Google Pay
+  button into this div. We just give it the right size/border-radius. */
+ .google-pay-button {
+ width: 100%;
+ min-height: 48px;
+ border-radius: 12px;
+ overflow: hidden;
+ }
+ .google-pay-button > div { border-radius: 12px !important; }
+
+ .checkout-wallet-divider {
+ display: flex;
+ align-items: center;
+ gap: 0.75rem;
+ margin: 0.6rem 0;
+ color: var(--soft-ink);
+ font-size: 0.82rem;
+ }
+ .checkout-wallet-divider::before,
+ .checkout-wallet-divider::after {
+ content: '';
+ flex: 1;
+ height: 1px;
+ background: #E8DDD4;
+ }
+
  .checkout-error {
  background: #FFE4E8;
  color: #B91C3D;
@@ -2047,7 +2101,18 @@
  </div>
  <div>
  <label for="checkoutPhone">Phone</label>
- <input type="tel" id="checkoutPhone" name="phone" required autocomplete="tel" placeholder="(504) 555-1234" />
+ <input
+  type="tel"
+  id="checkoutPhone"
+  name="phone"
+  required
+  autocomplete="tel"
+  inputmode="numeric"
+  pattern="\(\d{3}\) \d{3}-\d{4}"
+  title="Please enter a 10-digit phone number, e.g., (504) 555-1234"
+  placeholder="(504) 555-1234"
+  maxlength="14"
+ />
  </div>
  </div>
  <div>
@@ -2060,6 +2125,13 @@
  </div>
 
  <div class="checkout-section-title">Payment</div>
+
+ <div class="checkout-wallets" id="walletButtons">
+ <button type="button" id="apple-pay-button" class="apple-pay-button" hidden aria-label="Pay with Apple Pay"></button>
+ <div id="google-pay-button" class="google-pay-button" hidden></div>
+ <div class="checkout-wallet-divider" id="walletDivider" hidden><span>or pay with card</span></div>
+ </div>
+
  <div id="card-container" class="checkout-card-container"></div>
 
  <div class="checkout-error" id="checkoutError" role="alert" hidden></div>
@@ -2599,11 +2671,13 @@
  // ---------- Square Web Payments SDK integration ----------
 
  // Square SDK state — initialized lazily on first checkout.
- let squareConfig = null;        // { environment, applicationId, locationId }
- let squarePayments = null;      // Square.payments() instance
- let squareCard = null;          // Card form instance (re-created per modal open)
- let squareInitPromise = null;   // Memoized init promise so we only fetch /api/config once
- let activeCheckoutWindow = null; // windowId currently being checked out
+ let squareConfig = null;          // { environment, applicationId, locationId }
+ let squarePayments = null;        // Square.payments() instance
+ let squareCard = null;            // Card form instance (re-created per modal open)
+ let squareApplePay = null;        // Apple Pay instance (re-created per modal open)
+ let squareGooglePay = null;       // Google Pay instance (re-created per modal open)
+ let squareInitPromise = null;     // Memoized init promise so we only fetch /api/config once
+ let activeCheckoutWindow = null;  // windowId currently being checked out
 
  function loadSquareSdkScript(environment) {
    const url = environment === 'production'
@@ -2689,16 +2763,90 @@
    document.getElementById('checkoutModal').classList.add('open');
    document.body.style.overflow = 'hidden';
 
-   // Lazy-init Square + mount card form
+   // Lazy-init Square + mount payment methods
    const payBtn = document.getElementById('checkoutPayBtn');
    payBtn.disabled = true;
    try {
      await initSquare();
-     await mountSquareCard();
+
+     // Build a paymentRequest object — required for Apple/Google Pay so the
+     // wallet UIs show the correct total, currency, and (optionally) line items
+     const paymentRequest = squarePayments.paymentRequest({
+       countryCode: 'US',
+       currencyCode: 'USD',
+       total: { amount: total.toFixed(2), label: "MJ's Sweets" },
+       lineItems: items.map(entry => {
+         const lookup = getProductBySku(entry.sku);
+         if (!lookup) return null;
+         const { product, flavor } = lookup;
+         const displayName = flavor ? `${product.name}, ${flavor}` : product.name;
+         return {
+           label: `${displayName} × ${entry.qty}`,
+           amount: (product.price * entry.qty).toFixed(2),
+         };
+       }).filter(Boolean),
+     });
+
+     // Mount card (always available) and wallet methods in parallel.
+     // Wallets fail silently if the device/browser doesn't support them.
+     await Promise.all([
+       mountSquareCard(),
+       mountSquareApplePay(paymentRequest),
+       mountSquareGooglePay(paymentRequest),
+     ]);
+
+     // Show the divider only if at least one wallet method rendered
+     const anyWallet = !document.getElementById('apple-pay-button').hidden
+                    || !document.getElementById('google-pay-button').hidden;
+     document.getElementById('walletDivider').hidden = !anyWallet;
+
      payBtn.disabled = false;
    } catch (err) {
      console.error('Square init failed:', err);
      showCheckoutError('Couldn\'t load the payment form. Refresh the page or text Maddie.');
+   }
+ }
+
+ // Apple Pay — only available in Safari on Mac/iOS with a card in Wallet.
+ // Fails silently elsewhere; we hide the button if init throws.
+ async function mountSquareApplePay(paymentRequest) {
+   const btn = document.getElementById('apple-pay-button');
+   btn.hidden = true;
+   if (squareApplePay) {
+     try { await squareApplePay.destroy(); } catch (_) {}
+     squareApplePay = null;
+   }
+   try {
+     squareApplePay = await squarePayments.applePay(paymentRequest);
+     btn.hidden = false;
+     btn.onclick = () => handleWalletPayment(squareApplePay, 'apple-pay', 'Apple Pay');
+   } catch (err) {
+     // Expected on non-Safari browsers / devices without Apple Pay set up
+     console.log('Apple Pay unavailable:', err.message || err);
+   }
+ }
+
+ // Google Pay — works in most modern browsers, especially Chrome.
+ // Square's SDK renders the official Google Pay button into our container.
+ async function mountSquareGooglePay(paymentRequest) {
+   const container = document.getElementById('google-pay-button');
+   container.hidden = true;
+   container.innerHTML = '';
+   if (squareGooglePay) {
+     try { await squareGooglePay.destroy(); } catch (_) {}
+     squareGooglePay = null;
+   }
+   try {
+     squareGooglePay = await squarePayments.googlePay(paymentRequest);
+     await squareGooglePay.attach('#google-pay-button', {
+       buttonColor: 'black',
+       buttonType: 'pay',
+       buttonSizeMode: 'fill',
+     });
+     container.hidden = false;
+     container.addEventListener('click', () => handleWalletPayment(squareGooglePay, 'google-pay', 'Google Pay'), { once: false });
+   } catch (err) {
+     console.log('Google Pay unavailable:', err.message || err);
    }
  }
 
@@ -2718,14 +2866,13 @@
    squareCard.addEventListener('focusClassRemoved', () => container.classList.remove('is-focused'));
  }
 
- async function handleCheckoutSubmit() {
-   const payBtn = document.getElementById('checkoutPayBtn');
-   if (payBtn.disabled) return;
+ // Validate the customer fields + phone digit count + cart contents.
+ // Returns { ok: true, customer, items, note } or { ok: false } and shows error.
+ // Used by all payment methods (card, Apple Pay, Google Pay) before tokenizing.
+ function validateCheckoutForm() {
    hideCheckoutError();
-
-   // Native form validation for the customer fields
    const form = document.getElementById('checkoutForm');
-   if (!form.reportValidity()) return;
+   if (!form.reportValidity()) return { ok: false };
 
    const customer = {
      name: document.getElementById('checkoutName').value.trim(),
@@ -2733,58 +2880,105 @@
      email: document.getElementById('checkoutEmail').value.trim(),
    };
    const note = document.getElementById('checkoutNote').value.trim();
+
+   const phoneDigits = customer.phone.replace(/\D/g, '');
+   if (phoneDigits.length !== 10) {
+     showCheckoutError('Please enter a valid 10-digit phone number.');
+     document.getElementById('checkoutPhone').focus();
+     return { ok: false };
+   }
+
    const items = cart.filter(e => e.windowId === activeCheckoutWindow)
                      .map(e => ({ sku: e.sku, qty: e.qty }));
    if (items.length === 0) {
      showCheckoutError('Your cart for this batch is empty.');
-     return;
+     return { ok: false };
    }
 
+   return { ok: true, customer, items, note };
+ }
+
+ // Shared "submit token to /api/checkout" used by card, Apple Pay, Google Pay.
+ // Tokens are interchangeable — the backend doesn't care which method generated them.
+ async function processPayment(paymentToken, methodName, validated) {
+   const payBtn = document.getElementById('checkoutPayBtn');
    payBtn.disabled = true;
    payBtn.classList.add('is-loading');
    payBtn.querySelector('.pay-btn-label').textContent = 'Processing';
 
    try {
-     // Tokenize — Square's iframe handles card details, returns a one-time token
-     const tokenResult = await squareCard.tokenize();
-     if (tokenResult.status !== 'OK') {
-       const errs = tokenResult.errors?.map(e => e.message).join(' · ') || 'Card details look invalid.';
-       throw new Error(errs);
-     }
-
-     // POST to our serverless function — it talks to Square with the secret access token
      const res = await fetch('/api/checkout', {
        method: 'POST',
        headers: { 'Content-Type': 'application/json' },
        body: JSON.stringify({
-         items,
-         paymentToken: tokenResult.token,
-         customer,
+         items: validated.items,
+         paymentToken,
+         customer: validated.customer,
          pickupWindow: activeCheckoutWindow,
-         pickupNote: note,
+         pickupNote: validated.note,
+         paymentMethod: methodName,
        }),
      });
      const data = await res.json();
-     if (!res.ok) {
-       throw new Error(data.detail || data.error || 'Payment failed.');
-     }
+     if (!res.ok) throw new Error(data.detail || data.error || 'Payment failed.');
 
-     // Success — clear this batch's items from the cart and show success
      cart = cart.filter(e => e.windowId !== activeCheckoutWindow);
      updateCart();
-     showCheckoutSuccess(customer.name, data);
+     showCheckoutSuccess(validated.customer.name, data);
    } catch (err) {
      console.error('Checkout error:', err);
      showCheckoutError(err.message || 'Something went wrong. Please try again.');
      payBtn.disabled = false;
      payBtn.classList.remove('is-loading');
-     // Restore button label with current total
-     const items = cart.filter(e => e.windowId === activeCheckoutWindow);
-     const total = items.reduce((sum, e) => {
+     const total = validated.items.reduce((sum, e) => {
        const p = getProductBySku(e.sku)?.product;
        return sum + (p ? p.price * e.qty : 0);
      }, 0);
      payBtn.querySelector('.pay-btn-label').textContent = `Pay $${total.toFixed(2)}`;
+   }
+ }
+
+ // Card form submit — tokenize via Square Card, then process
+ async function handleCheckoutSubmit() {
+   const payBtn = document.getElementById('checkoutPayBtn');
+   if (payBtn.disabled) return;
+
+   const v = validateCheckoutForm();
+   if (!v.ok) return;
+
+   try {
+     const tokenResult = await squareCard.tokenize();
+     if (tokenResult.status !== 'OK') {
+       const errs = tokenResult.errors?.map(e => e.message).join(' · ') || 'Card details look invalid.';
+       throw new Error(errs);
+     }
+     await processPayment(tokenResult.token, 'card', v);
+   } catch (err) {
+     console.error('Card checkout error:', err);
+     showCheckoutError(err.message || 'Something went wrong with the card.');
+   }
+ }
+
+ // Shared wallet click handler (Apple Pay / Google Pay)
+ async function handleWalletPayment(walletInstance, methodName, methodDisplay) {
+   const v = validateCheckoutForm();
+   if (!v.ok) return;
+
+   try {
+     const tokenResult = await walletInstance.tokenize();
+     if (tokenResult.status !== 'OK') {
+       const firstErr = tokenResult.errors?.[0];
+       const code = firstErr?.code || '';
+       // User dismissed the wallet sheet — that's not an error worth surfacing
+       if (code === 'CANCELED' || code === 'CANCELLED' || code === 'CANCEL') return;
+       throw new Error(tokenResult.errors?.map(e => e.message).join(' · ') || `${methodDisplay} payment failed.`);
+     }
+     await processPayment(tokenResult.token, methodName, v);
+   } catch (err) {
+     // Some wallet errors look like "User cancelled" — swallow those quietly
+     if ((err.message || '').toLowerCase().includes('cancel')) return;
+     console.error(`${methodName} error:`, err);
+     showCheckoutError(err.message || `${methodDisplay} failed. Try again or use card.`);
    }
  }
 
@@ -2825,10 +3019,20 @@
  async function closeCheckoutModal() {
    document.getElementById('checkoutModal').classList.remove('open');
    document.body.style.overflow = '';
-   if (squareCard) {
-     try { await squareCard.destroy(); } catch (_) {}
-     squareCard = null;
-   }
+   // Tear down all payment method instances — they'll be re-created on next open.
+   // Square's SDK requires destroy() before re-attaching to the same DOM node.
+   const teardown = async (instance) => {
+     if (!instance) return;
+     try { await instance.destroy(); } catch (_) {}
+   };
+   await Promise.all([
+     teardown(squareCard),
+     teardown(squareApplePay),
+     teardown(squareGooglePay),
+   ]);
+   squareCard = null;
+   squareApplePay = null;
+   squareGooglePay = null;
    activeCheckoutWindow = null;
  }
 
@@ -2863,6 +3067,25 @@
      burger.setAttribute('aria-expanded', 'false');
    });
  });
+
+ // Format the phone field as the user types: 5045596466 → (504) 559-6466.
+ // Stripping non-digits first means paste-from-anywhere ((504)555-1234,
+ // 504.555.1234, +1 504 555 1234, etc.) all normalize cleanly.
+ function formatPhoneInput(e) {
+   const input = e.target;
+   const digits = input.value.replace(/\D/g, '').slice(0, 10);
+   if (digits.length === 0) {
+     input.value = '';
+   } else if (digits.length <= 3) {
+     input.value = `(${digits}`;
+   } else if (digits.length <= 6) {
+     input.value = `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+   } else {
+     input.value = `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+   }
+ }
+ const checkoutPhoneEl = document.getElementById('checkoutPhone');
+ if (checkoutPhoneEl) checkoutPhoneEl.addEventListener('input', formatPhoneInput);
 
  // Esc closes any open overlay (cart, flavor picker, checkout, mobile menu)
  document.addEventListener('keydown', (e) => {
