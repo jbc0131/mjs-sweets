@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="color-scheme" content="light only" />
 <meta name="supported-color-schemes" content="light" />
+<meta name="theme-color" content="#FFF8F0" />
 <title>MJ's Sweets, From Scratch With Love</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -77,6 +78,11 @@
  transition: color 0.2s;
  }
  .nav-links a:hover { color: var(--hot-pink); }
+ .nav-actions {
+ display: flex;
+ align-items: center;
+ gap: 0.6rem;
+ }
  .cart-btn {
  background: var(--ink);
  color: var(--cream);
@@ -91,6 +97,7 @@
  gap: 0.5rem;
  font-size: 0.9rem;
  transition: transform 0.2s;
+ min-height: 44px;
  }
  .cart-btn:hover { transform: translateY(-2px); }
  .cart-count {
@@ -101,6 +108,31 @@
  font-size: 0.75rem;
  font-weight: 700;
  }
+ .hamburger {
+ display: none;
+ background: transparent;
+ border: none;
+ width: 44px;
+ height: 44px;
+ cursor: pointer;
+ padding: 0;
+ flex-direction: column;
+ align-items: center;
+ justify-content: center;
+ gap: 5px;
+ }
+ .hamburger span {
+ display: block;
+ width: 24px;
+ height: 2px;
+ background: var(--ink);
+ border-radius: 2px;
+ transition: transform 0.3s, opacity 0.2s;
+ transform-origin: center;
+ }
+ .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+ .hamburger.open span:nth-child(2) { opacity: 0; }
+ .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
  /* ---------- HERO ---------- */
  .hero {
@@ -337,9 +369,16 @@
  background: white;
  border-radius: 28px;
  overflow: hidden;
- transition: transform 0.3s, box-shadow 0.3s;
+ transition: transform 0.3s, box-shadow 0.3s, outline-color 0.3s;
  box-shadow: 0 4px 20px rgba(42, 26, 46, 0.06);
  border: 2px solid transparent;
+ scroll-margin-top: 100px;
+ outline: 3px solid transparent;
+ outline-offset: 4px;
+ }
+ .product-card.is-spotlight {
+ outline-color: var(--hot-pink);
+ box-shadow: 0 20px 50px rgba(255, 59, 127, 0.25);
  }
  .product-card:hover {
  transform: translateY(-8px);
@@ -1045,12 +1084,73 @@
  font-size: 4rem;
  margin-bottom: 1rem;
  }
+ .cart-group {
+ background: white;
+ border-radius: 18px;
+ padding: 1rem 1.1rem 1.1rem;
+ margin-bottom: 1.25rem;
+ border: 1px solid #F0E2D2;
+ box-shadow: 0 2px 10px rgba(42, 26, 46, 0.04);
+ }
+ .cart-group:last-child { margin-bottom: 0.5rem; }
+ .cart-group-header {
+ padding-bottom: 0.6rem;
+ margin-bottom: 0.4rem;
+ border-bottom: 1px dashed #EFE0CE;
+ }
+ .cart-group-title {
+ font-family: 'Fraunces', serif;
+ font-size: 1.1rem;
+ font-weight: 700;
+ color: var(--ink);
+ }
+ .cart-group-range {
+ font-size: 0.8rem;
+ color: var(--soft-ink);
+ margin-top: 0.15rem;
+ }
+ .cart-group-foot {
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
+ gap: 0.75rem;
+ margin-top: 0.8rem;
+ padding-top: 0.8rem;
+ border-top: 1px dashed #EFE0CE;
+ flex-wrap: wrap;
+ }
+ .cart-group-subtotal {
+ font-size: 0.95rem;
+ color: var(--soft-ink);
+ }
+ .cart-group-subtotal strong {
+ font-family: 'Fraunces', serif;
+ font-size: 1.15rem;
+ color: var(--ink);
+ margin-left: 0.25rem;
+ }
+ .checkout-group-btn {
+ background: var(--hot-pink);
+ color: white;
+ border: none;
+ padding: 0.7rem 1.2rem;
+ border-radius: 999px;
+ font-family: 'DM Sans', sans-serif;
+ font-weight: 700;
+ font-size: 0.85rem;
+ cursor: pointer;
+ box-shadow: 0 6px 18px var(--shadow);
+ transition: transform 0.2s;
+ }
+ .checkout-group-btn:hover { transform: translateY(-2px); }
+
  .cart-item {
  display: flex;
  gap: 1rem;
- padding: 1rem 0;
+ padding: 0.7rem 0;
  border-bottom: 1px solid #F5E8DC;
  }
+ .cart-item:last-of-type { border-bottom: none; }
  .cart-item-img {
  width: 60px;
  height: 60px;
@@ -1230,12 +1330,73 @@
  .hero-inner, .request-box, .about-inner, .footer-inner {
  grid-template-columns: 1fr;
  }
- .hero-collage { height: 360px; }
- .nav-links { display: none; }
+ .hero { padding: 3rem 1.5rem 4rem; }
+ .hero h1 { font-size: clamp(2.4rem, 8vw, 3.6rem); }
+ .hero p { font-size: 1.05rem; }
+ .hero-collage { height: 320px; }
+ .tile-1 { width: 180px; height: 180px; }
+ .tile-2 { width: 150px; height: 200px; }
+ .tile-3 { width: 160px; height: 160px; }
+ .tile-4 { width: 120px; height: 120px; }
+ .cookie-emoji { font-size: 3.5rem; }
+
+ nav { padding: 0.85rem 1.25rem; }
+ .hamburger { display: flex; }
+ .nav-links {
+ display: none;
+ position: absolute;
+ top: 100%;
+ left: 0;
+ right: 0;
+ flex-direction: column;
+ gap: 0;
+ background: var(--cream);
+ padding: 0.5rem 1.5rem;
+ border-bottom: 1px solid rgba(42, 26, 46, 0.06);
+ box-shadow: 0 12px 32px rgba(42, 26, 46, 0.08);
+ }
+ .nav-links.open { display: flex; }
+ .nav-links li { border-bottom: 1px solid rgba(42, 26, 46, 0.06); }
+ .nav-links li:last-child { border-bottom: none; }
+ .nav-links a {
+ display: block;
+ padding: 1rem 0;
+ font-size: 1rem;
+ min-height: 44px;
+ }
+
  section { padding: 4rem 1.5rem; }
+ .section-header { margin-bottom: 2.5rem; }
  .form-row { grid-template-columns: 1fr; }
- .request-box { padding: 2rem; }
- .about-photo { max-width: 280px; margin: 0 auto; }
+ .request-box { padding: 2rem 1.5rem; }
+ .about-photo { max-width: 240px; margin: 0 auto; }
+ .about-text h2 { font-size: 2rem; }
+
+ .footer-inner { gap: 2rem; margin-bottom: 2rem; }
+ footer { padding: 3rem 1.5rem 1.5rem; }
+
+ .qty-btn { width: 32px; height: 32px; }
+ .cart-drawer { width: 100vw; max-width: 100vw; }
+ .cart-header, .cart-items, .cart-footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+
+ .flavor-box { padding: 2rem 1.5rem; }
+ .flavor-grid { grid-template-columns: 1fr; }
+ }
+
+ @media (max-width: 480px) {
+ .cart-btn-label { display: none; }
+ .cart-btn { padding: 0.6rem 0.9rem; }
+ .logo { font-size: 1.7rem; }
+ .hero-ctas .btn { width: 100%; justify-content: center; }
+ }
+
+ @media (prefers-reduced-motion: reduce) {
+ *, *::before, *::after {
+ animation-duration: 0.001ms !important;
+ animation-iteration-count: 1 !important;
+ transition-duration: 0.001ms !important;
+ scroll-behavior: auto !important;
+ }
  }
 </style>
 </head>
@@ -1245,16 +1406,21 @@
 <nav>
  <div class="nav-inner">
  <a href="#" class="logo">MJ's <span>Sweets</span></a>
- <ul class="nav-links">
+ <ul class="nav-links" id="navLinks">
  <li><a href="#shop">Shop Seasonal</a></li>
  <li><a href="#custom">Custom Orders</a></li>
  <li><a href="#about">About</a></li>
  <li><a href="#reviews">Reviews</a></li>
  <li><a href="#faq">FAQ</a></li>
  </ul>
+ <div class="nav-actions">
  <button class="cart-btn" onclick="openCart()">
- 🛒 Cart <span class="cart-count" id="cartCount">0</span>
+ <span aria-hidden="true">🛒</span> <span class="cart-btn-label">Cart</span> <span class="cart-count" id="cartCount">0</span>
  </button>
+ <button class="hamburger" id="hamburger" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="navLinks" onclick="toggleNav()">
+ <span></span><span></span><span></span>
+ </button>
+ </div>
  </div>
 </nav>
 
@@ -1265,10 +1431,10 @@
  <div class="hero-inner">
  <div>
  <div class="hero-eyebrow">handmade in Madisonville, LA ✿</div>
- <h1>Cookies that are <em>almost</em> too pretty to eat.</h1>
+ <h1 id="heroHeadline">Cookies that are <em>almost</em> too pretty to eat.</h1>
  <p>Hand-decorated sugar cookies, marshmallow rice krispy treats, and custom edible art for every celebration, baked from scratch with a whole lot of love.</p>
  <div class="hero-ctas">
- <a href="#shop" class="btn btn-primary">Shop Mother's Day Box →</a>
+ <a id="heroCta" href="#shop" class="btn btn-primary">Shop Seasonal Sets →</a>
  <a href="#custom" class="btn btn-secondary">Request Custom Order</a>
  </div>
  </div>
@@ -1583,12 +1749,7 @@
  </div>
  </div>
  <div class="cart-footer">
- <div class="cart-total">
- <span>Total</span>
- <span id="cartTotal">$0.00</span>
- </div>
- <button class="checkout-btn" onclick="checkout()">Checkout with Stripe →</button>
- <p class="checkout-note">Secure checkout · Pickup or local delivery</p>
+ <p class="checkout-note">Each pickup batch is checked out separately, so Maddie knows exactly which week to bake for.</p>
  </div>
 </div>
 
@@ -1609,12 +1770,42 @@
 <div class="toast" id="toast">✓ Added to cart</div>
 
 <script>
- const TODAY = new Date('2026-04-26'); // For demo; in production: new Date()
+ // Normalize to start of day in the user's local timezone so date comparisons
+ // (Opens / Order by / Closed) flip cleanly at midnight rather than mid-afternoon.
+ const TODAY = (() => {
+   const d = new Date();
+   d.setHours(0, 0, 0, 0);
+   return d;
+ })();
+
+ // Flavor → Square SKU map for cake pop variations
+ const FLAVOR_SKUS = {
+   'Chocolate':  'POP-CHOC',
+   'Vanilla':    'POP-VAN',
+   'Funfetti':   'POP-FUN',
+   'Red Velvet': 'POP-RV',
+   'Lemon':      'POP-LEM',
+   'Strawberry': 'POP-STR'
+ };
+
+ // Pickup-window metadata. Each seasonal product belongs to one of these.
+ // Year-round items (cake pops, rice krispies, pretzels) auto-attach to whichever
+ // seasonal window is currently open; if none, they fall back to next-available.
+ const PICKUP_WINDOWS = {
+   'mothers-day-2026': { label: "Mother's Day",  emoji: '💐', range: 'May 8–10',   pickupDate: '2026-05-10' },
+   'july-4-2026':      { label: '4th of July',   emoji: '🎆', range: 'July 2–4',   pickupDate: '2026-07-04' },
+   'halloween-2026':   { label: 'Halloween',     emoji: '🎃', range: 'Oct 29–31',  pickupDate: '2026-10-31' },
+   'christmas-2026':   { label: 'Christmas',     emoji: '🎄', range: 'Dec 23–25',  pickupDate: '2026-12-25' },
+   'next-available':   { label: 'Next Available Batch', emoji: '🍪', range: "Maddie will text to coordinate pickup", pickupDate: null }
+ };
 
  const products = [
  {
  id: 1,
+ sku: 'SET-MD',
+ windowId: 'mothers-day-2026',
  name: "Mother's Day Box",
+ cookieLabel: "Mother's Day Cookies",
  desc: "Florals, hearts & 'Best Mom'",
  price: 40,
  holidayDate: '2026-05-10',
@@ -1623,6 +1814,8 @@
  },
  {
  id: 6,
+ sku: 'MINI-MD',
+ windowId: 'mothers-day-2026',
  name: "Mother's Day Minis",
  desc: "Bite-size beauties",
  price: 6,
@@ -1643,6 +1836,7 @@
  },
  {
  id: 7,
+ sku: 'KRIS-DZ',
  name: "Rice Krispies",
  desc: "Marshmallow-y, drizzled & dreamy",
  price: 24,
@@ -1652,6 +1846,7 @@
  },
  {
  id: 8,
+ sku: 'PRETZ-DZ',
  name: "Dipped Pretzel Rods",
  desc: "Sweet & salty crunch, dressed up",
  price: 24,
@@ -1661,7 +1856,10 @@
  },
  {
  id: 2,
+ sku: 'SET-JULY4',
+ windowId: 'july-4-2026',
  name: "4th of July Set",
+ cookieLabel: "4th of July Cookies",
  desc: "Stars, stripes & sparklers",
  price: 40,
  holidayDate: '2026-07-04',
@@ -1670,7 +1868,10 @@
  },
  {
  id: 3,
+ sku: 'SET-HALLOWEEN',
+ windowId: 'halloween-2026',
  name: "Halloween Spooky Set",
+ cookieLabel: "Halloween Cookies",
  desc: "Pumpkins, ghosts & black cats",
  price: 40,
  holidayDate: '2026-10-31',
@@ -1679,7 +1880,10 @@
  },
  {
  id: 4,
+ sku: 'SET-XMAS',
+ windowId: 'christmas-2026',
  name: "Christmas Cookie Box",
+ cookieLabel: "Christmas Cookies",
  desc: "Trees, snowflakes & gingerbread",
  price: 40,
  holidayDate: '2026-12-25',
@@ -1705,9 +1909,58 @@
  return { state: 'open', label: `Order by ${fmt(pickupClose)} for pickup`, canOrder: true, badge: 'Now Open', badgeClass: 'open' };
  }
 
- let cart = {};
+ // Cart is an array of line items: [{ sku, qty, windowId }]
+ // Grouped by windowId at render time so each pickup batch checks out separately.
+ let cart = [];
  let pendingProductId = null;
  let pendingFlavor = null;
+
+ // ---------- Cart helpers ----------
+
+ // Map the compact priceUnit notation used on product cards ("/dz", "/4 pack")
+ // to a clear unit label suitable for the cart, where the customer is
+ // about to commit money and shouldn't be confused about what they're buying.
+ function unitLabel(priceUnit) {
+   if (!priceUnit || priceUnit === '/dz') return 'per dozen';
+   if (priceUnit === '/4 pack') return 'per 4-pack';
+   return priceUnit.replace(/^\//, 'per '); // graceful fallback
+ }
+
+ // Look up { product, flavor } given a SKU. SKU is the canonical identifier
+ // because it matches the Square Item Library import.
+ function getProductBySku(sku) {
+   const direct = products.find(p => p.sku === sku);
+   if (direct) return { product: direct, flavor: null };
+   if (sku.startsWith('POP-')) {
+     const cakePop = products.find(p => p.isCakePop);
+     const flavor = Object.keys(FLAVOR_SKUS).find(f => FLAVOR_SKUS[f] === sku);
+     if (cakePop && flavor) return { product: cakePop, flavor };
+   }
+   return null;
+ }
+
+ // Which seasonal windows are currently open for ordering? Returns an array of windowIds.
+ function getActiveSeasonalWindows() {
+   const seen = new Set();
+   products.forEach(p => {
+     if (!p.windowId || !p.holidayDate) return;
+     if (getOrderStatus(p.holidayDate).canOrder) seen.add(p.windowId);
+   });
+   return Array.from(seen);
+ }
+
+ // Resolve which window a year-round / cake-pop item should attach to.
+ // Soonest-active wins; if no seasonal is open, fall back to "next-available".
+ function resolveYearRoundWindow() {
+   const active = getActiveSeasonalWindows();
+   if (active.length === 0) return 'next-available';
+   const soonest = active
+     .map(id => ({ id, date: new Date(PICKUP_WINDOWS[id].pickupDate) }))
+     .sort((a, b) => a.date - b.date)[0];
+   return soonest.id;
+ }
+
+ // ---------- Flavor picker (cake pops) ----------
 
  function openFlavorPicker(productId) {
  pendingProductId = productId;
@@ -1736,10 +1989,9 @@
 
  function confirmFlavor() {
  if (!pendingFlavor) return;
- const cartKey = `${pendingProductId}::${pendingFlavor}`;
- cart[cartKey] = (cart[cartKey] || 0) + 1;
- updateCart();
- showToast(`✓ ${pendingFlavor} cake pops added`);
+ const sku = FLAVOR_SKUS[pendingFlavor];
+ if (!sku) return;
+ addToCartBySku(sku);
  closeFlavorPicker();
  }
 
@@ -1786,7 +2038,7 @@
  </div>
  <div class="product-foot">
  <div class="product-price">$${p.price}<small> ${p.priceUnit || '/dz'}</small></div>
- <button class="add-btn" id="btn-${p.id}" onclick="addToCart(${p.id})">+ Add</button>
+ <button class="add-btn" id="btn-${p.id}" onclick="addToCartBySku('${p.sku}')">+ Add</button>
  </div>
  </div>
  </div>
@@ -1795,7 +2047,7 @@
 
  const status = getOrderStatus(p.holidayDate);
  const buttonHtml = status.canOrder
- ? `<button class="add-btn" id="btn-${p.id}" onclick="addToCart(${p.id})">+ Add</button>`
+ ? `<button class="add-btn" id="btn-${p.id}" onclick="addToCartBySku('${p.sku}')">+ Add</button>`
  : `<button class="add-btn disabled" disabled>${status.state === 'soon' ? 'Coming Soon' : 'Closed'}</button>`;
 
  if (compact) {
@@ -1815,7 +2067,7 @@
  }
 
  return `
- <div class="product-card ${status.canOrder ? '' : 'is-unavailable'}">
+ <div class="product-card ${status.canOrder ? '' : 'is-unavailable'}" id="product-${p.id}">
  <div class="product-img ${p.cls}">
  <span class="product-tag tag-${status.badgeClass}">${status.badge}</span>
  ${p.img}
@@ -1877,7 +2129,7 @@
  function buildAddonCard(p) {
  const isFlavored = p.isCakePop;
  const buttonText = isFlavored ? 'Pick Flavor' : '+ Add';
- const onclickAttr = isFlavored ? `openFlavorPicker(${p.id})` : `addToCart(${p.id})`;
+ const onclickAttr = isFlavored ? `openFlavorPicker(${p.id})` : `addToCartBySku('${p.sku}')`;
  const idAttr = isFlavored ? '' : `id="btn-${p.id}"`;
  return `
  <div class="addon-card">
@@ -1896,83 +2148,144 @@
  `;
  }
 
- function addToCart(id) {
- const key = String(id);
- cart[key] = (cart[key] || 0) + 1;
- updateCart();
- showToast('✓ Added to cart');
- const btn = document.getElementById(`btn-${id}`);
- btn.textContent = '✓ Added';
- btn.classList.add('added');
- setTimeout(() => {
- btn.textContent = '+ Add';
- btn.classList.remove('added');
- }, 1500);
+ // Public addToCart entry — accepts a SKU. Resolves the right pickup window
+ // (seasonal items = their own window; year-round/cake-pops = soonest active),
+ // merges with an existing line if one exists, then re-renders.
+ function addToCartBySku(sku) {
+   const lookup = getProductBySku(sku);
+   if (!lookup) return;
+   const { product, flavor } = lookup;
+
+   const windowId = (product.windowId)
+     ? product.windowId
+     : resolveYearRoundWindow();
+
+   const existing = cart.find(e => e.sku === sku && e.windowId === windowId);
+   if (existing) {
+     existing.qty++;
+   } else {
+     cart.push({ sku, qty: 1, windowId });
+   }
+   updateCart();
+
+   const winLabel = PICKUP_WINDOWS[windowId].label;
+   const itemLabel = flavor ? `${flavor} cake pops` : product.name;
+   showToast(`✓ ${itemLabel} → ${winLabel} pickup`);
+
+   // Visual ack on the source button (only present for non-cake-pop adds)
+   const btn = document.getElementById(`btn-${product.id}`);
+   if (btn) {
+     btn.textContent = '✓ Added';
+     btn.classList.add('added');
+     setTimeout(() => {
+       btn.textContent = '+ Add';
+       btn.classList.remove('added');
+     }, 1500);
+   }
  }
 
- function updateQty(key, delta) {
- cart[key] = (cart[key] || 0) + delta;
- if (cart[key] <= 0) delete cart[key];
- updateCart();
+ function updateQty(sku, windowId, delta) {
+   const entry = cart.find(e => e.sku === sku && e.windowId === windowId);
+   if (!entry) return;
+   entry.qty += delta;
+   if (entry.qty <= 0) cart = cart.filter(e => e !== entry);
+   updateCart();
  }
 
  function updateCart() {
- const count = Object.values(cart).reduce((a, b) => a + b, 0);
- document.getElementById('cartCount').textContent = count;
+   const count = cart.reduce((sum, e) => sum + e.qty, 0);
+   document.getElementById('cartCount').textContent = count;
 
- const itemsEl = document.getElementById('cartItems');
- const totalEl = document.getElementById('cartTotal');
+   const itemsEl = document.getElementById('cartItems');
 
- if (count === 0) {
- itemsEl.innerHTML = `
- <div class="cart-empty">
- <div class="cart-empty-icon">🍪</div>
- <p>Your cart's empty, let's fix that!</p>
- </div>`;
- totalEl.textContent = '$0.00';
- return;
- }
+   if (count === 0) {
+     itemsEl.innerHTML = `
+       <div class="cart-empty">
+         <div class="cart-empty-icon">🍪</div>
+         <p>Your cart's empty, let's fix that!</p>
+       </div>`;
+     return;
+   }
 
- let total = 0;
- itemsEl.innerHTML = Object.entries(cart).map(([key, qty]) => {
- // Parse composite key for flavored items: "id::flavor"
- const [idStr, flavor] = key.split('::');
- const id = parseInt(idStr);
- const p = products.find(x => x.id === id);
- total += p.price * qty;
- const displayName = flavor ? `${p.name}, ${flavor}` : p.name;
- return `
- <div class="cart-item">
- <div class="cart-item-img ${p.cls}">${p.img}</div>
- <div class="cart-item-info">
- <div class="cart-item-name">${displayName}</div>
- <div class="cart-item-price">$${p.price} each</div>
- <div class="qty-controls">
- <button class="qty-btn" onclick="updateQty('${key}', -1)">−</button>
- <span class="qty-num">${qty}</span>
- <button class="qty-btn" onclick="updateQty('${key}', 1)">+</button>
- </div>
- </div>
- </div>
- `;
- }).join('');
- totalEl.textContent = `$${total.toFixed(2)}`;
+   // Group line items by pickup window
+   const groups = {};
+   cart.forEach(entry => {
+     (groups[entry.windowId] = groups[entry.windowId] || []).push(entry);
+   });
+
+   // Render groups in pickup-date order (sooner pickups first)
+   const orderedWindowIds = Object.keys(groups).sort((a, b) => {
+     const da = PICKUP_WINDOWS[a].pickupDate;
+     const db = PICKUP_WINDOWS[b].pickupDate;
+     if (!da) return 1;
+     if (!db) return -1;
+     return new Date(da) - new Date(db);
+   });
+
+   itemsEl.innerHTML = orderedWindowIds.map(wid => {
+     const win = PICKUP_WINDOWS[wid];
+     let subtotal = 0;
+     const lineHtml = groups[wid].map(entry => {
+       const lookup = getProductBySku(entry.sku);
+       if (!lookup) return '';
+       const { product, flavor } = lookup;
+       const lineTotal = product.price * entry.qty;
+       subtotal += lineTotal;
+       const displayName = flavor ? `${product.name}, ${flavor}` : product.name;
+       return `
+         <div class="cart-item">
+           <div class="cart-item-img ${product.cls}">${product.img}</div>
+           <div class="cart-item-info">
+             <div class="cart-item-name">${displayName}</div>
+             <div class="cart-item-price">$${product.price.toFixed(2)} ${unitLabel(product.priceUnit)}</div>
+             <div class="qty-controls">
+               <button class="qty-btn" aria-label="Decrease quantity" onclick="updateQty('${entry.sku}', '${wid}', -1)">−</button>
+               <span class="qty-num">${entry.qty}</span>
+               <button class="qty-btn" aria-label="Increase quantity" onclick="updateQty('${entry.sku}', '${wid}', 1)">+</button>
+             </div>
+           </div>
+         </div>`;
+     }).join('');
+
+     return `
+       <div class="cart-group">
+         <div class="cart-group-header">
+           <div class="cart-group-title">${win.emoji} ${win.label} pickup</div>
+           <div class="cart-group-range">${win.range}</div>
+         </div>
+         ${lineHtml}
+         <div class="cart-group-foot">
+           <div class="cart-group-subtotal">Subtotal: <strong>$${subtotal.toFixed(2)}</strong></div>
+           <button class="checkout-group-btn" onclick="startCheckout('${wid}')">Checkout this batch →</button>
+         </div>
+       </div>`;
+   }).join('');
  }
 
  function openCart() {
- document.getElementById('cartDrawer').classList.add('open');
- document.getElementById('cartOverlay').classList.add('open');
+   document.getElementById('cartDrawer').classList.add('open');
+   document.getElementById('cartOverlay').classList.add('open');
  }
  function closeCart() {
- document.getElementById('cartDrawer').classList.remove('open');
- document.getElementById('cartOverlay').classList.remove('open');
+   document.getElementById('cartDrawer').classList.remove('open');
+   document.getElementById('cartOverlay').classList.remove('open');
  }
- function checkout() {
- if (Object.keys(cart).length === 0) {
- showToast('Add some cookies first!');
- return;
- }
- showToast('🎉 In real life: Stripe checkout opens here');
+
+ // Per-pickup-batch checkout. Each call becomes one Square order + payment.
+ // Stub for now — Square Web Payments SDK wires up next.
+ function startCheckout(windowId) {
+   const items = cart.filter(e => e.windowId === windowId);
+   if (items.length === 0) return;
+
+   const win = PICKUP_WINDOWS[windowId];
+   const total = items.reduce((sum, e) => {
+     const p = getProductBySku(e.sku)?.product;
+     return sum + (p ? p.price * e.qty : 0);
+   }, 0);
+
+   // TODO: open Square Web Payments SDK card form, post to /api/checkout
+   console.log('[checkout stub]', { windowId, items, total });
+   showToast(`💳 Checkout coming next — $${total.toFixed(2)} for ${win.label}`);
  }
 
  function showToast(msg) {
@@ -1988,7 +2301,83 @@
  e.target.reset();
  }
 
+ // Mobile nav toggle
+ function toggleNav() {
+   const links = document.getElementById('navLinks');
+   const burger = document.getElementById('hamburger');
+   const isOpen = links.classList.toggle('open');
+   burger.classList.toggle('open', isOpen);
+   burger.setAttribute('aria-expanded', String(isOpen));
+ }
+
+ // Close the mobile menu after a link tap so users land on the section, not the open menu
+ document.querySelectorAll('#navLinks a').forEach(a => {
+   a.addEventListener('click', () => {
+     document.getElementById('navLinks').classList.remove('open');
+     const burger = document.getElementById('hamburger');
+     burger.classList.remove('open');
+     burger.setAttribute('aria-expanded', 'false');
+   });
+ });
+
+ // Esc closes any open overlay (cart, flavor picker, mobile menu)
+ document.addEventListener('keydown', (e) => {
+   if (e.key !== 'Escape') return;
+   if (document.getElementById('cartDrawer').classList.contains('open')) closeCart();
+   if (document.getElementById('flavorModal').classList.contains('open')) closeFlavorPicker();
+   if (document.getElementById('navLinks').classList.contains('open')) toggleNav();
+ });
+
+ // Hero countdown — picks the soonest holiday whose ordering window is open
+ // and rewrites the H1 + primary CTA to point at it.
+ function setupHeroHeadline() {
+   const headline = document.getElementById('heroHeadline');
+   const cta = document.getElementById('heroCta');
+   if (!headline || !cta) return;
+
+   const openHolidays = products
+     .filter(p => p.holidayDate && !p.isCakePop && !p.isYearRound)
+     .map(p => ({ p, status: getOrderStatus(p.holidayDate) }))
+     .filter(({ status }) => status.canOrder)
+     .sort((a, b) => new Date(a.p.holidayDate) - new Date(b.p.holidayDate));
+
+   if (openHolidays.length === 0) return; // Keep evergreen headline as fallback
+
+   const { p } = openHolidays[0];
+
+   // Parse holiday as a *local* date so day-counts don't drift with timezone
+   const [y, mo, d] = p.holidayDate.split('-').map(Number);
+   const pickupClose = new Date(y, mo - 1, d - 3);
+   pickupClose.setHours(0, 0, 0, 0);
+
+   const msPerDay = 24 * 60 * 60 * 1000;
+   const daysLeft = Math.round((pickupClose - TODAY) / msPerDay);
+
+   let html;
+   if (daysLeft <= 0) {
+     html = `Last day to order <em>${p.cookieLabel}!</em>`;
+   } else if (daysLeft === 1) {
+     html = `1 day left to order <em>${p.cookieLabel}!</em>`;
+   } else {
+     html = `${daysLeft} days left to order <em>${p.cookieLabel}!</em>`;
+   }
+   headline.innerHTML = html;
+
+   cta.textContent = 'Order Now →';
+   cta.href = `#product-${p.id}`;
+   cta.addEventListener('click', () => {
+     // Brief spotlight on the target card after the smooth scroll lands
+     setTimeout(() => {
+       const card = document.getElementById(`product-${p.id}`);
+       if (!card) return;
+       card.classList.add('is-spotlight');
+       setTimeout(() => card.classList.remove('is-spotlight'), 2000);
+     }, 600);
+   });
+ }
+
  renderProducts();
+ setupHeroHeadline();
 </script>
 
 </body>

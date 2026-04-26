@@ -1,0 +1,12 @@
+{
+  "name": "mjs-sweets",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MJ's Sweets — handmade cookies storefront with embedded Square checkout",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "square": "^39.0.0"
+  }
+}
