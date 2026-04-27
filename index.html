@@ -3153,7 +3153,10 @@
      const res = await fetch('/api/contact', { method: 'POST', body: formData });
      const data = await res.json().catch(() => ({}));
      if (!res.ok) {
-       throw new Error(data.error || 'Something went wrong. Please try again.');
+       const msg = data.detail
+         ? `${data.error || 'Error'}: ${data.detail}`
+         : (data.error || 'Something went wrong. Please try again.');
+       throw new Error(msg);
      }
      showToast('💌 Request sent! Maddie will text you back soon.');
      form.reset();
