@@ -7,6 +7,9 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "square": "^39.0.0"
+    "square": "^39.0.0",
+    "@signalwire/compatibility-api": "^4.0.0",
+    "@vercel/blob": "^0.23.0",
+    "formidable": "^3.5.0"
   }
 }

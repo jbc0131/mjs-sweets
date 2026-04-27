@@ -814,6 +814,50 @@
  border-color: var(--hot-pink);
  }
  textarea { resize: vertical; min-height: 80px; }
+ input[type="file"] {
+ padding: 0.5rem;
+ font-size: 0.85rem;
+ background: #FFF8F0;
+ cursor: pointer;
+ }
+ input[type="file"]::file-selector-button {
+ background: var(--ink);
+ color: var(--cream);
+ border: none;
+ padding: 0.5rem 0.9rem;
+ border-radius: 999px;
+ font-family: 'DM Sans', sans-serif;
+ font-weight: 600;
+ font-size: 0.82rem;
+ cursor: pointer;
+ margin-right: 0.6rem;
+ }
+ .label-hint {
+ color: var(--soft-ink);
+ font-weight: 400;
+ font-size: 0.78rem;
+ }
+ .photo-preview {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 0.5rem;
+ margin-top: 0.5rem;
+ }
+ .photo-preview img {
+ width: 64px;
+ height: 64px;
+ object-fit: cover;
+ border-radius: 10px;
+ border: 2px solid #E8DDD4;
+ }
+ .form-error {
+ background: #FFE4E8;
+ color: #B91C3D;
+ padding: 0.7rem 0.9rem;
+ border-radius: 10px;
+ font-size: 0.88rem;
+ line-height: 1.4;
+ }
 
  /* ---------- ABOUT STRIP ---------- */
  #about {
@@ -1863,7 +1907,7 @@
  <p>Fill out the form for non-urgent requests, or text me directly if you've got a tight timeline. I usually reply within a few hours during the day.</p>
  <a href="sms:+15045596466" class="btn btn-primary">📱 Text Maddie · (504) 559-6466</a>
  </div>
- <form id="customRequestForm" onsubmit="handleRequest(event)">
+ <form id="customRequestForm" enctype="multipart/form-data" onsubmit="handleRequest(event)">
  <div class="form-row">
  <div>
  <label for="reqName">Your name</label>
@@ -1895,9 +1939,15 @@
  </div>
  <div>
  <label for="reqVision">Tell me your vision</label>
- <textarea id="reqVision" name="vision" placeholder="Colors, theme, quantity, inspiration photos welcome via text..." required></textarea>
+ <textarea id="reqVision" name="vision" placeholder="Colors, theme, quantity..." required></textarea>
  </div>
- <button type="submit" class="btn btn-primary" style="justify-content: center;">Send Request →</button>
+ <div>
+ <label for="reqPhotos">Inspiration photos <span class="label-hint">(optional, up to 5)</span></label>
+ <input type="file" id="reqPhotos" name="inspiration_photos" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif" />
+ <div id="reqPhotoPreview" class="photo-preview" hidden></div>
+ </div>
+ <div class="form-error" id="reqError" role="alert" hidden></div>
+ <button type="submit" class="btn btn-primary" id="reqSubmit" style="justify-content: center;">Send Request →</button>
  </form>
  </div>
  </div>
@@ -3061,10 +3111,62 @@
  setTimeout(() => t.classList.remove('show'), 2200);
  }
 
- function handleRequest(e) {
- e.preventDefault();
- showToast('💌 Request sent! Maddie will reach out soon.');
- e.target.reset();
+ // Inspiration photo preview — show small thumbnails as soon as files are picked
+ const reqPhotosInput = document.getElementById('reqPhotos');
+ if (reqPhotosInput) {
+   reqPhotosInput.addEventListener('change', (e) => {
+     const preview = document.getElementById('reqPhotoPreview');
+     preview.innerHTML = '';
+     const files = Array.from(e.target.files || []).slice(0, 5);
+     if (files.length === 0) {
+       preview.hidden = true;
+       return;
+     }
+     files.forEach(file => {
+       if (!file.type.startsWith('image/')) return;
+       const img = document.createElement('img');
+       img.src = URL.createObjectURL(file);
+       img.alt = file.name;
+       img.onload = () => URL.revokeObjectURL(img.src);
+       preview.appendChild(img);
+     });
+     preview.hidden = false;
+   });
+ }
+
+ // POST the custom-order form to /api/contact, which texts Maddie via SignalWire.
+ // Shows clear success/error states; never silently fails.
+ async function handleRequest(e) {
+   e.preventDefault();
+   const form = e.target;
+   const submitBtn = document.getElementById('reqSubmit');
+   const errorEl = document.getElementById('reqError');
+   errorEl.hidden = true;
+   errorEl.textContent = '';
+
+   submitBtn.disabled = true;
+   const originalLabel = submitBtn.textContent;
+   submitBtn.textContent = 'Sending…';
+
+   try {
+     const formData = new FormData(form);
+     const res = await fetch('/api/contact', { method: 'POST', body: formData });
+     const data = await res.json().catch(() => ({}));
+     if (!res.ok) {
+       throw new Error(data.error || 'Something went wrong. Please try again.');
+     }
+     showToast('💌 Request sent! Maddie will text you back soon.');
+     form.reset();
+     document.getElementById('reqPhotoPreview').hidden = true;
+     document.getElementById('reqPhotoPreview').innerHTML = '';
+   } catch (err) {
+     console.error('Request submit error:', err);
+     errorEl.textContent = err.message || 'Something went wrong. Please text Maddie at (504) 559-6466.';
+     errorEl.hidden = false;
+   } finally {
+     submitBtn.disabled = false;
+     submitBtn.textContent = originalLabel;
+   }
  }
 
  // Stamp current year in the footer so it never goes stale

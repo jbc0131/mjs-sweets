@@ -6,6 +6,9 @@
     },
     "api/config.js": {
       "maxDuration": 5
+    },
+    "api/contact.js": {
+      "maxDuration": 30
     }
   },
   "headers": [
