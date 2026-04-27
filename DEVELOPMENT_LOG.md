@@ -4,6 +4,72 @@ Chronological record of significant work. Most recent at top.
 
 ---
 
+## 2026-04-27 — Paid custom-order flow
+
+The custom-order form was upgraded from "submit free inquiry" to "pay upfront to reserve." Spec lives in `CUSTOM_ORDER_PLAN.md`; build was executed in 5 phases plus a planning + review pre-phase.
+
+### Tier model
+
+Two tiers added to Square Item Library:
+
+| SKU | Tier | Price | Description |
+|---|---|---|---|
+| `CUSTOM-SIG-DZN` | Signature Custom Dozen | $40/dz | 1–3 colors per cookie; monograms, single-theme sets, elegant minimalism |
+| `CUSTOM-SHOW-DZN` | Showstopper Custom Dozen | $46/dz | Up to 6 colors per cookie; weddings, milestones, intricate themed sets |
+
+Tier system is honor-system; Maddie's recourse if a customer self-selects the wrong tier is to text them, offer an upgrade or a refund. The customer email already sets the expectation that Maddie confirms before work begins. Source-of-truth price lives in Square; `api/contact.js` fetches it via Catalog API on every charge — same pattern as the cart flow's `api/checkout.js`.
+
+### Form changes (`index.html`)
+
+Below the existing custom-order fields, the form now has:
+- Two tier cards side-by-side (stacked on mobile) showing real portfolio thumbnails — `wedding-cookies-gold-monogram.jpg` for Signature, `birthday-cookies-farm-animals.jpg` for Showstopper. Selected card gets a hot-pink border + soft pink background.
+- Qty stepper (`−` / number input / `+`) bound to [1, 10] with a "Need more than 10 dozen? Text Maddie" hint that's always visible.
+- Live total row that appears once a tier is selected. Submit button label updates to `Pay & Reserve $XX.XX →` in real time.
+- Date picker `min` attribute set dynamically to today + 14 days.
+- Pitch copy reframed: form is now the paid-reservation path; "Just exploring? Text me first" SMS link is the inquiry escape hatch.
+
+### New custom-checkout modal (`index.html`)
+
+Slim version of the existing cart-checkout modal. Lives in `#customCheckoutModal`, reuses every `.checkout-*` CSS class, but with `custom*` IDs so its DOM nodes don't collide with the cart modal. Shows order summary, Apple Pay / Google Pay buttons (if available on the device), card iframe, and a 24-hour-confirmation reassurance line under the title.
+
+Square SDK wiring: separate Card / Apple Pay / Google Pay instances (`customSquareCard`, `customSquareApplePay`, `customSquareGooglePay`) attached to `#custom-*` DOM nodes. The `squarePayments` instance is shared with the cart flow. SDK init reuses `initSquare()` from the cart modal — first checkout in either modal triggers the lazy init.
+
+Idempotency: client generates a UUID via `crypto.randomUUID()` once on modal open and reuses it across retries inside the same modal session. Backend uses it for `createOrder` and a derived `${key}-pay` for `createPayment`, so a network-level retry of the same submission collapses to one Square Order + one Payment.
+
+Close-blocking: a `customCheckoutInFlight` flag is set during the POST. While it's set, the `✕` button and overlay-click both no-op — prevents the "user closes mid-payment, gets charged silently, panics" failure mode. The Pay button is `.is-loading` during the same window for visual signal.
+
+### Backend rewrite (`api/contact.js`)
+
+Refactored from "form submit → notify" to "form submit → charge → notify."
+
+Pipeline:
+1. Validate text fields + new fields (`tier`, `dozens`, `paymentToken`, `idempotencyKey`).
+2. Server-side check: `date_needed >= today + 14 days`. Mirrors the client check; defends against crafted POSTs that bypass the picker's `min`.
+3. Photos upload to Vercel Blob (existing).
+4. Fetch authoritative tier price from Square Catalog (60s cache, mirrors `api/checkout.js`). Sanity floor: $10–$200 per dozen.
+5. Create Square Order with the request's `idempotencyKey` and the tier × qty as a single line item. Order metadata includes tier, dozens, customer name/phone, occasion, date_needed, payment_method.
+6. Charge via `paymentsApi.createPayment` with the same idempotency key + `-pay` suffix.
+7. **Post-charge: notifications are best-effort, NEVER fail the request.** Once the Payment succeeds, the customer is charged; returning a non-2xx would prompt a retry → double charge. All three notifications (Maddie email, customer email, Maddie SMS) fire via `Promise.allSettled`. Each result is logged on failure but does not affect the response.
+8. Response body: `{ success, orderId, orderShortId, paymentId, receiptUrl, totalCents, photoCount, notificationsSent: { maddieEmail, customerEmail, sms } }`. The client uses `notificationsSent.maddieEmail === false` to decide whether to surface a yellow fallback box telling the customer to text Maddie the order ID.
+
+Email templates:
+- **Maddie's email** (existing template, enhanced): header reads "💰 New custom order — paid in full" with Order #shortId + total in the gradient bar; new rows for Tier, Quantity, Paid (Paid uses the mint accent color); receipt button below the photos block; reply-to-respond hint also reminds Maddie about the 24-hr confirmation window.
+- **Customer email** (new): friendly "Your custom order is reserved! 🎉" header, summary table (Tier, Quantity, Needed by, Paid), pink "View your Square receipt →" button, "Need to cancel?" section with 24-hr cancellation policy and SMS link to Maddie, "Questions?" footer. Plain-text counterpart included.
+
+### What didn't change
+
+- Cart checkout flow (`api/checkout.js`, cart drawer, cart modal) — untouched. The new modal lives alongside it with no shared DOM IDs and no shared SDK instances.
+- Vercel env vars — `SQUARE_ACCESS_TOKEN` and `SQUARE_LOCATION_ID` were already set for the cart flow, so `api/contact.js` picks them up without new config.
+- Photo upload + SignalWire SMS pipelines — same code paths as before.
+
+### Risks logged but not addressed in v1
+
+- **24-hr cancellation window is a manual SLA.** No automated reminder, no self-serve cancel link. Maddie has to check email at least once a day. Acceptable for v1; revisit when admin interface lands (`ORDER_TRACKING_PLAN.md`).
+- **Tier mismatch.** Customer self-selects; honor-system. Mitigation is Maddie's text-and-refund recourse, set up by the customer-email language.
+- **Photo orphans on payment failure.** Photos uploaded before charge; if the charge fails, photos stay on Blob. Cost is negligible. Could add a cleanup cron later.
+
+---
+
 ## 2026-04-26 / 2026-04-27 — Initial build through production launch
 
 Single intensive session that took the storefront from a static HTML mockup to a live, payment-accepting e-commerce site with embedded Square checkout, real product photography, a 52-photo portfolio gallery, and SMS notifications for custom orders. Major milestones below in the order they happened.

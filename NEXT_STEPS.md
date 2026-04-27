@@ -5,11 +5,25 @@ Active checklist of pending work. See `DEVELOPMENT_LOG.md` for what's already sh
 ## Where we are
 
 Storefront is **live in production at https://www.mjs-sweets.com** with:
-- Card, Apple Pay, and Google Pay checkout
+- Card, Apple Pay, and Google Pay checkout — for both seasonal sets AND paid custom orders
+- **Paid custom-order flow** with two tiers (Signature $40/dz, Showstopper $46/dz), 1–10 dozen, 14-day lead time, full-refund-on-cancel within 24 hours
 - Real product photos
 - 52-photo portfolio gallery across 7 categories
-- Custom-order form with photo uploads
-- SMS notifications (currently unreliable — see Priority 1)
+- Branded HTML email notifications via Resend (Maddie + customer confirmation)
+- SMS notifications via SignalWire (best-effort; see Priority 3)
+
+---
+
+## Recently shipped
+
+**Paid custom-order flow** — `CUSTOM_ORDER_PLAN.md` shipped end-to-end. Customer fills the existing form, picks a tier (Signature/Showstopper) and quantity (1–10 dozen), pays upfront via Square (card / Apple Pay / Google Pay) with a 14-day lead-time floor. Charge goes through `api/contact.js`, which fetches authoritative tier prices from Square Catalog, creates a Square Order + Payment with client-supplied idempotency keys (so retries collapse to one charge), then fires three notifications in parallel (Maddie email, customer confirmation email, Maddie SMS) — all best-effort post-charge so notification failures never double-charge a customer. Maddie has 24 hours to confirm or refund; full refund is one click in the Square dashboard. Pre-launch test plan is documented in `CUSTOM_ORDER_PLAN.md` § Test plan.
+
+**Action items for Maddie before going live:**
+- [ ] Add 2 items in the Square dashboard (already mirrored in `Square_Item_Import.csv` for repo bookkeeping):
+  - Signature Custom Dozen / SKU `CUSTOM-SIG-DZN` / $40 / Sellable=Y, Stockable=N
+  - Showstopper Custom Dozen / SKU `CUSTOM-SHOW-DZN` / $46 / Sellable=Y, Stockable=N
+- [ ] Walk through `CUSTOM_ORDER_PLAN.md` § Test plan (12 cases) on a preview deploy before merging to main
+- [ ] After first real custom order: confirm Square dashboard refund flow takes <30 seconds (Order → Refund → confirm)
 
 ---
 

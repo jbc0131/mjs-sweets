@@ -1024,6 +1024,207 @@
  line-height: 1.4;
  }
 
+ /* ---------- CUSTOM TIER PICKER (paid custom orders) ---------- */
+ /* Lives inside the custom-order form. Two cards (Signature / Showstopper),
+    a 1–10 dozens stepper, and a live total. Tier change OR qty change
+    triggers a recalc of #reqTotal and the Pay & Reserve button label. */
+ .tier-picker {
+ background: #FFF8F0;
+ border: 1px solid #F0E2D2;
+ border-radius: 16px;
+ padding: 1.25rem;
+ display: grid;
+ gap: 1rem;
+ }
+ .tier-picker-heading { display: grid; gap: 0.25rem; }
+ .tier-picker-label {
+ font-family: 'Fraunces', serif;
+ font-size: 1.1rem;
+ font-weight: 700;
+ color: var(--ink);
+ margin: 0;
+ }
+ .tier-picker-hint {
+ color: var(--soft-ink);
+ font-size: 0.82rem;
+ line-height: 1.45;
+ }
+ .tier-grid {
+ display: grid;
+ grid-template-columns: 1fr 1fr;
+ gap: 0.75rem;
+ }
+ .tier-card {
+ position: relative;
+ background: white;
+ border: 2px solid #E8DDD4;
+ border-radius: 14px;
+ padding: 0.85rem;
+ cursor: pointer;
+ display: grid;
+ grid-template-columns: 88px 1fr;
+ gap: 0.85rem;
+ align-items: start;
+ transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+ }
+ .tier-card:hover { border-color: #D9C9B8; }
+ .tier-card.is-selected {
+ border-color: var(--hot-pink);
+ background: #FFF5F8;
+ box-shadow: 0 6px 18px rgba(255, 59, 127, 0.12);
+ }
+ /* The native radio is hidden; the whole card is the click target. */
+ .tier-radio {
+ position: absolute;
+ opacity: 0;
+ pointer-events: none;
+ width: 1px;
+ height: 1px;
+ }
+ .tier-card-thumb {
+ width: 88px;
+ height: 88px;
+ border-radius: 10px;
+ overflow: hidden;
+ background: #FFF8F0;
+ }
+ .tier-card-thumb img {
+ width: 100%;
+ height: 100%;
+ object-fit: cover;
+ display: block;
+ }
+ .tier-card-body { display: grid; gap: 0.15rem; min-width: 0; }
+ .tier-card-name {
+ font-family: 'Fraunces', serif;
+ font-size: 1rem;
+ font-weight: 700;
+ color: var(--ink);
+ line-height: 1.2;
+ }
+ .tier-card-price {
+ font-family: 'Fraunces', serif;
+ font-size: 1.25rem;
+ font-weight: 700;
+ color: var(--hot-pink);
+ line-height: 1;
+ margin: 0.15rem 0 0.35rem;
+ }
+ .tier-card-unit {
+ font-size: 0.7rem;
+ font-weight: 600;
+ color: var(--soft-ink);
+ margin-left: 0.15rem;
+ }
+ .tier-card-desc {
+ color: var(--soft-ink);
+ font-size: 0.8rem;
+ line-height: 1.4;
+ }
+ .tier-card-desc strong { color: var(--ink); }
+
+ .tier-qty-row {
+ display: flex;
+ align-items: center;
+ gap: 0.85rem;
+ flex-wrap: wrap;
+ padding-top: 0.25rem;
+ }
+ .tier-qty-label {
+ font-size: 0.95rem;
+ font-weight: 600;
+ margin: 0;
+ color: var(--ink);
+ }
+ .tier-qty-stepper {
+ display: inline-flex;
+ align-items: center;
+ background: white;
+ border: 2px solid #E8DDD4;
+ border-radius: 12px;
+ overflow: hidden;
+ }
+ .tier-qty-btn {
+ width: 40px;
+ height: 40px;
+ border: none;
+ background: transparent;
+ font-size: 1.3rem;
+ font-weight: 700;
+ color: var(--ink);
+ cursor: pointer;
+ transition: background 0.15s;
+ padding: 0;
+ line-height: 1;
+ }
+ .tier-qty-btn:hover:not(:disabled) { background: rgba(42, 26, 46, 0.05); }
+ .tier-qty-btn:disabled { color: #C0B8C8; cursor: not-allowed; }
+ .tier-qty-stepper input {
+ width: 56px;
+ border: none;
+ border-left: 1px solid #E8DDD4;
+ border-right: 1px solid #E8DDD4;
+ border-radius: 0;
+ text-align: center;
+ font-size: 1rem;
+ font-weight: 700;
+ color: var(--ink);
+ padding: 0.5rem 0;
+ background: white;
+ -moz-appearance: textfield;
+ }
+ .tier-qty-stepper input::-webkit-outer-spin-button,
+ .tier-qty-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+ .tier-qty-stepper input:focus { outline: none; }
+ .tier-qty-range {
+ font-size: 0.82rem;
+ color: var(--soft-ink);
+ }
+ .tier-qty-overflow-hint {
+ color: var(--soft-ink);
+ font-size: 0.78rem;
+ line-height: 1.4;
+ margin-top: -0.25rem;
+ }
+ .tier-qty-overflow-hint a {
+ color: var(--hot-pink);
+ text-decoration: none;
+ font-weight: 600;
+ border-bottom: 1px solid rgba(255, 59, 127, 0.3);
+ }
+ .tier-qty-overflow-hint a:hover { border-bottom-color: var(--hot-pink); }
+
+ .tier-total-row {
+ display: flex;
+ justify-content: space-between;
+ align-items: baseline;
+ padding-top: 0.85rem;
+ border-top: 1px dashed #F0E2D2;
+ }
+ .tier-total-label {
+ font-family: 'DM Sans', sans-serif;
+ font-size: 0.85rem;
+ font-weight: 700;
+ color: var(--soft-ink);
+ letter-spacing: 0.06em;
+ text-transform: uppercase;
+ }
+ .tier-total-amount {
+ font-family: 'Fraunces', serif;
+ font-size: 1.8rem;
+ font-weight: 700;
+ color: var(--ink);
+ line-height: 1;
+ }
+
+ @media (max-width: 600px) {
+ .tier-grid { grid-template-columns: 1fr; }
+ .tier-card { grid-template-columns: 72px 1fr; gap: 0.7rem; padding: 0.75rem; }
+ .tier-card-thumb { width: 72px; height: 72px; }
+ .tier-card-price { font-size: 1.15rem; }
+ .tier-total-amount { font-size: 1.5rem; }
+ }
+
  /* ---------- ABOUT STRIP ---------- */
  #about {
  background: var(--blush);
@@ -1841,6 +2042,26 @@
  flex-wrap: wrap;
  }
 
+ /* Shown only on the custom-order success view when the server reports
+    that Maddie's notification email failed. Tells the customer the
+    payment is safe and asks them to text the order ID directly. */
+ .custom-success-fallback {
+ background: #FFF8DC;
+ border: 1px solid #F5E6A3;
+ color: #6B5500;
+ padding: 0.75rem 1rem;
+ border-radius: 12px;
+ font-size: 0.85rem;
+ line-height: 1.5;
+ text-align: left;
+ margin-bottom: 1.2rem;
+ }
+ .custom-success-fallback a {
+ color: #6B5500;
+ font-weight: 700;
+ text-decoration: underline;
+ }
+
  @media (max-width: 600px) {
  .checkout-modal { padding: 0; }
  .checkout-box {
@@ -2055,9 +2276,9 @@
 
  <div class="request-box">
  <div class="request-pitch">
- <h3>Two ways to chat about your order.</h3>
- <p>Fill out the form for non-urgent requests, or text me directly if you've got a tight timeline. I usually reply within a few hours during the day.</p>
- <a href="sms:+15045596466" class="btn btn-primary">📱 Text Maddie · (504) 559-6466</a>
+ <h3>Reserve your <em>custom dozen</em>.</h3>
+ <p>Tell me about your order and pay upfront so it's locked in. I'll text or email within 24 hours to confirm the design — and if either of us needs to back out within that window, it's a full refund, no questions asked.</p>
+ <p style="font-size: 0.92rem;">Just exploring? <a href="sms:+15045596466" class="text-link">Text me first</a> and we'll chat.</p>
  </div>
  <form id="customRequestForm" enctype="multipart/form-data" onsubmit="handleRequest(event)">
  <div class="form-row">
@@ -2100,7 +2321,7 @@
  </select>
  </div>
  <div>
- <label for="reqDate">Date needed by</label>
+ <label for="reqDate">Date needed by <span class="label-hint">(at least 14 days out)</span></label>
  <input type="date" id="reqDate" name="date_needed" required>
  </div>
  </div>
@@ -2117,8 +2338,63 @@
  <input type="file" id="reqPhotos" name="inspiration_photos" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif" />
  <div id="reqPhotoPreview" class="photo-preview" hidden></div>
  </div>
+
+ <!-- TIER PICKER — paid-order tier selection + qty stepper + live total.
+      JS in handleRequest()/initTierPicker() (Phase 4) wires up:
+        - card click → check radio + add .is-selected
+        - qty stepper +/- → bound 1..10
+        - tier or qty change → recalc #reqTotal + update Pay button label -->
+ <div class="tier-picker" id="tierPicker">
+ <div class="tier-picker-heading">
+ <div class="tier-picker-label">Pick your style</div>
+ <div class="tier-picker-hint">Maddie reviews every order before she starts baking. Full refund within 24 hours of submitting if anything changes — for either of us.</div>
+ </div>
+ <div class="tier-grid" role="radiogroup" aria-label="Custom dozen tier">
+ <label class="tier-card" data-tier="CUSTOM-SIG-DZN" data-price-cents="4000">
+ <input type="radio" name="tier" value="CUSTOM-SIG-DZN" required class="tier-radio" />
+ <div class="tier-card-thumb">
+ <img src="/portfolio/wedding/wedding-cookies-gold-monogram.jpg" alt="Example: focused gold monogram custom dozen" loading="lazy" decoding="async" />
+ </div>
+ <div class="tier-card-body">
+ <div class="tier-card-name">Signature Custom Dozen</div>
+ <div class="tier-card-price">$40<span class="tier-card-unit">/dz</span></div>
+ <div class="tier-card-desc">Beautifully focused designs in your theme — perfect for monograms, single-theme sets, and elegant minimalism. <strong>1–3 colors per cookie.</strong></div>
+ </div>
+ </label>
+ <label class="tier-card" data-tier="CUSTOM-SHOW-DZN" data-price-cents="4600">
+ <input type="radio" name="tier" value="CUSTOM-SHOW-DZN" required class="tier-radio" />
+ <div class="tier-card-thumb">
+ <img src="/portfolio/birthdays/birthday-cookies-farm-animals.jpg" alt="Example: bold multi-color custom dozen" loading="lazy" decoding="async" />
+ </div>
+ <div class="tier-card-body">
+ <div class="tier-card-name">Showstopper Custom Dozen</div>
+ <div class="tier-card-price">$46<span class="tier-card-unit">/dz</span></div>
+ <div class="tier-card-desc">Bold, expressive designs with rich palettes and intricate detail. Perfect for weddings, milestone celebrations, and standout themed sets. <strong>Up to 6 colors per cookie.</strong></div>
+ </div>
+ </label>
+ </div>
+
+ <div class="tier-qty-row">
+ <label for="reqDozens" class="tier-qty-label">How many dozens?</label>
+ <div class="tier-qty-stepper" role="group" aria-label="Quantity in dozens">
+ <button type="button" class="tier-qty-btn" id="reqDozensMinus" aria-label="Decrease quantity">−</button>
+ <input type="number" id="reqDozens" name="dozens" min="1" max="10" step="1" value="1" required inputmode="numeric" />
+ <button type="button" class="tier-qty-btn" id="reqDozensPlus" aria-label="Increase quantity">+</button>
+ </div>
+ <div class="tier-qty-range">(1–10)</div>
+ </div>
+ <div class="tier-qty-overflow-hint">Need more than 10 dozen? <a href="sms:+15045596466">Text Maddie at (504) 559-6466</a> to plan a larger order.</div>
+
+ <div class="tier-total-row" id="reqTotalRow" hidden>
+ <span class="tier-total-label">Total</span>
+ <span class="tier-total-amount" id="reqTotal">$0.00</span>
+ </div>
+ </div>
+
  <div class="form-error" id="reqError" role="alert" hidden></div>
- <button type="submit" class="btn btn-primary" id="reqSubmit" style="justify-content: center;">Send Request →</button>
+ <button type="submit" class="btn btn-primary" id="reqSubmit" style="justify-content: center;">
+ <span id="reqSubmitLabel">Pay &amp; Reserve →</span>
+ </button>
  </form>
  </div>
  </div>
@@ -2404,6 +2680,64 @@
  <div class="checkout-success-actions">
  <a class="btn btn-primary" id="successReceiptLink" target="_blank" rel="noopener">View Square Receipt →</a>
  <button class="btn btn-secondary" onclick="closeCheckoutModal()">Close</button>
+ </div>
+ </div>
+ </div>
+</div>
+
+<!-- CUSTOM-ORDER CHECKOUT MODAL —
+     Opens after the customer fills the custom-order form and clicks
+     "Pay & Reserve". Slimmer than the cart modal: name/phone/email already
+     captured by the outer form, so this modal collects only payment.
+     Reuses .checkout-* CSS classes; uses `custom*` IDs so its DOM nodes
+     don't collide with the cart modal's. -->
+<div class="checkout-modal" id="customCheckoutModal" role="dialog" aria-modal="true" aria-labelledby="customCheckoutTitle">
+ <div class="checkout-overlay" onclick="closeCustomCheckoutModal()"></div>
+ <div class="checkout-box">
+ <button class="checkout-close" onclick="closeCustomCheckoutModal()" aria-label="Close checkout">✕</button>
+
+ <div class="checkout-form-view" id="customCheckoutFormView">
+ <div class="checkout-header">
+ <div class="checkout-eyebrow">Reserve</div>
+ <h2 class="checkout-title" id="customCheckoutTitle">Your custom dozen</h2>
+ <div class="checkout-pickup-range">Maddie texts or emails within 24 hours to confirm design details. Full refund within that window if either of us needs to back out — no questions asked.</div>
+ </div>
+
+ <div class="checkout-summary" id="customCheckoutSummary"></div>
+
+ <div class="checkout-section-title">Payment</div>
+
+ <div class="checkout-wallets" id="customWalletButtons">
+ <button type="button" id="custom-apple-pay-button" class="apple-pay-button" hidden aria-label="Pay with Apple Pay"></button>
+ <div id="custom-google-pay-button" class="google-pay-button" hidden></div>
+ <div class="checkout-wallet-divider" id="customWalletDivider" hidden><span>or pay with card</span></div>
+ </div>
+
+ <div id="custom-card-container" class="checkout-card-container"></div>
+
+ <div class="checkout-error" id="customCheckoutError" role="alert" hidden></div>
+
+ <div class="checkout-foot">
+ <div class="checkout-total-row">Total <strong id="customCheckoutTotal">$0.00</strong></div>
+ <button type="button" class="checkout-pay-btn" id="customCheckoutPayBtn" onclick="handleCustomCheckoutSubmit()" disabled>
+ <span class="pay-btn-label">Pay</span>
+ </button>
+ </div>
+
+ <p class="checkout-secure-note">🔒 Secure payment by Square. Card details are entered directly into Square's encrypted iframe — they never touch our server.</p>
+ </div>
+
+ <div class="checkout-success-view" id="customSuccessView" hidden>
+ <div class="checkout-success-icon">✓</div>
+ <h3>Order placed!</h3>
+ <p class="checkout-success-msg">Thanks, <span id="customSuccessName"></span>. Maddie will text or email within 24 hours to confirm design details.</p>
+ <p class="checkout-success-meta">Order ID: <code id="customSuccessOrderId"></code></p>
+ <p class="custom-success-fallback" id="customSuccessNotifyFallback" hidden>
+ Heads up — our notification email to Maddie didn't go through. Please <a href="sms:+15045596466">text her at (504) 559-6466</a> with your order ID so she can find it. Your payment is safe and the order is recorded in Square.
+ </p>
+ <div class="checkout-success-actions">
+ <a class="btn btn-primary" id="customSuccessReceiptLink" target="_blank" rel="noopener">View Square Receipt →</a>
+ <button class="btn btn-secondary" onclick="closeCustomCheckoutModal()">Close</button>
  </div>
  </div>
  </div>
@@ -2877,8 +3211,11 @@
  const buttonText = isFlavored ? 'Pick Flavor' : '+ Add';
  const onclickAttr = isFlavored ? `openFlavorPicker(${p.id})` : `addToCartBySku('${p.sku}')`;
  const idAttr = isFlavored ? '' : `id="btn-${p.id}"`;
+ // Unique slug per product so anchor links (used in JSON-LD Product schema)
+ // can deep-link to a specific addon card. e.g. "Dipped Pretzel Rods" -> "dipped-pretzel-rods".
+ const cardSlug = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
  return `
- <div class="addon-card">
+ <div class="addon-card" id="${cardSlug}">
  <div class="addon-img ${p.cls}">${renderProductImage(p)}</div>
  <div class="addon-body">
  <div>
@@ -3385,6 +3722,420 @@
    activeCheckoutWindow = null;
  }
 
+ // ---------- CUSTOM-ORDER PAID CHECKOUT FLOW ----------
+ //
+ // Mirrors the cart checkout above but on its own DOM (#customCheckout*) and
+ // its own SDK instances. Square's Card SDK can only attach to one DOM node at
+ // a time, so the cart modal and custom-order modal each get their own instance.
+
+ // Display-only prices. The server fetches authoritative prices from Square
+ // Catalog before charging, so a price mismatch here is a UI bug, not a money bug.
+ const TIER_PRICE_CENTS = {
+   'CUSTOM-SIG-DZN':  4000,
+   'CUSTOM-SHOW-DZN': 4600,
+ };
+ const TIER_NAME = {
+   'CUSTOM-SIG-DZN':  'Signature Custom Dozen',
+   'CUSTOM-SHOW-DZN': 'Showstopper Custom Dozen',
+ };
+
+ // Per-modal-session state
+ let customSquareCard = null;
+ let customSquareApplePay = null;
+ let customSquareGooglePay = null;
+ let customCheckoutCustomer = null;       // { name, phone, email } captured at modal open
+ let customCheckoutPayload = null;        // { tier, dozens, totalCents }
+ let customCheckoutIdempotencyKey = null; // stable for the lifetime of one modal session
+ let customCheckoutInFlight = false;      // true while a charge is processing — blocks close
+
+ // --- Form-side wiring (tier picker, qty stepper, live total, date min) ---
+ function initCustomOrderForm() {
+   const form = document.getElementById('customRequestForm');
+   if (!form) return;
+
+   // Lead time: today + 14 days, formatted as YYYY-MM-DD for <input type=date>.
+   // Browser blocks earlier dates via the `min` attribute; handleRequest also
+   // re-validates server-side semantics in case someone bypasses the picker.
+   const dateInput = document.getElementById('reqDate');
+   if (dateInput) {
+     const min = new Date();
+     min.setDate(min.getDate() + 14);
+     const yyyy = min.getFullYear();
+     const mm = String(min.getMonth() + 1).padStart(2, '0');
+     const dd = String(min.getDate()).padStart(2, '0');
+     dateInput.min = `${yyyy}-${mm}-${dd}`;
+   }
+
+   // Tier card click — the <label> wraps the radio so native click toggles it.
+   // We only need to drive the .is-selected visual state and recompute total.
+   form.querySelectorAll('.tier-radio').forEach(radio => {
+     radio.addEventListener('change', () => {
+       form.querySelectorAll('.tier-card').forEach(c => c.classList.remove('is-selected'));
+       const card = radio.closest('.tier-card');
+       if (radio.checked && card) card.classList.add('is-selected');
+       updateCustomTotal();
+     });
+   });
+
+   // Qty stepper
+   const dozensInput = document.getElementById('reqDozens');
+   const minusBtn   = document.getElementById('reqDozensMinus');
+   const plusBtn    = document.getElementById('reqDozensPlus');
+   const clamp = (n) => Math.max(1, Math.min(10, Math.round(Number(n) || 1)));
+
+   if (minusBtn && plusBtn && dozensInput) {
+     minusBtn.addEventListener('click', () => {
+       dozensInput.value = String(clamp(parseInt(dozensInput.value, 10) - 1));
+       updateCustomTotal();
+     });
+     plusBtn.addEventListener('click', () => {
+       dozensInput.value = String(clamp(parseInt(dozensInput.value, 10) + 1));
+       updateCustomTotal();
+     });
+     dozensInput.addEventListener('input', updateCustomTotal);
+     dozensInput.addEventListener('blur', () => {
+       dozensInput.value = String(clamp(dozensInput.value));
+       updateCustomTotal();
+     });
+   }
+
+   updateCustomTotal();
+ }
+
+ function getSelectedTier() {
+   const r = document.querySelector('input[name="tier"]:checked');
+   return r ? r.value : null;
+ }
+ function getSelectedDozens() {
+   const v = parseInt(document.getElementById('reqDozens')?.value, 10);
+   return Number.isFinite(v) ? Math.max(1, Math.min(10, v)) : 1;
+ }
+ function computeCustomTotalCents() {
+   const tier = getSelectedTier();
+   if (!tier || !TIER_PRICE_CENTS[tier]) return 0;
+   return TIER_PRICE_CENTS[tier] * getSelectedDozens();
+ }
+ function formatUSD(cents) {
+   return `$${(cents / 100).toFixed(2)}`;
+ }
+
+ // Updates the live total row + the Pay & Reserve button label whenever tier
+ // or qty changes. Also disables the +/- buttons at the [1, 10] bounds.
+ function updateCustomTotal() {
+   const totalCents = computeCustomTotalCents();
+   const totalRow   = document.getElementById('reqTotalRow');
+   const totalEl    = document.getElementById('reqTotal');
+   const labelEl    = document.getElementById('reqSubmitLabel');
+   const minusBtn   = document.getElementById('reqDozensMinus');
+   const plusBtn    = document.getElementById('reqDozensPlus');
+
+   if (totalCents > 0) {
+     if (totalRow) totalRow.hidden = false;
+     if (totalEl)  totalEl.textContent = formatUSD(totalCents);
+     if (labelEl)  labelEl.innerHTML = `Pay &amp; Reserve ${formatUSD(totalCents)} →`;
+   } else {
+     if (totalRow) totalRow.hidden = true;
+     if (totalEl)  totalEl.textContent = '$0.00';
+     if (labelEl)  labelEl.innerHTML = 'Pay &amp; Reserve →';
+   }
+
+   const dz = getSelectedDozens();
+   if (minusBtn) minusBtn.disabled = dz <= 1;
+   if (plusBtn)  plusBtn.disabled  = dz >= 10;
+ }
+
+ // Date utility used by handleRequest as a belt-and-suspenders check on top
+ // of the picker's `min` attribute. Returns true iff yyyyMmDd >= today + 14d.
+ function isDateAtLeast14Days(yyyyMmDd) {
+   if (!yyyyMmDd) return false;
+   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(yyyyMmDd);
+   if (!m) return false;
+   const target = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+   target.setHours(0, 0, 0, 0);
+   const today = new Date();
+   today.setHours(0, 0, 0, 0);
+   const minDate = new Date(today);
+   minDate.setDate(minDate.getDate() + 14);
+   return target.getTime() >= minDate.getTime();
+ }
+
+ // Run wiring as soon as the script executes. The <script> tag sits at end of
+ // <body>, so the form DOM is already in place.
+ initCustomOrderForm();
+
+ // --- Modal open / close ---
+
+ // crypto.randomUUID is available everywhere this site supports (Chrome 92+,
+ // Safari 15.4+, Firefox 95+). Math.random fallback for ancient browsers —
+ // sufficient as an idempotency key on a single browser session.
+ function newIdempotencyKey() {
+   if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+   const rand = (n) => Array.from({ length: n }, () =>
+     Math.floor(Math.random() * 16).toString(16)).join('');
+   return `${rand(8)}-${rand(4)}-4${rand(3)}-${rand(4)}-${rand(12)}`;
+ }
+
+ // Opens the custom-order checkout modal with the given customer + tier + qty.
+ // Idempotency key is generated once here and reused across retries inside
+ // this modal session — protects against duplicate Square Orders if the user
+ // double-clicks Pay or the network hiccups during processCustomPayment.
+ async function openCustomCheckout(customer, tier, dozens) {
+   customCheckoutCustomer = customer;
+   customCheckoutPayload = {
+     tier,
+     dozens,
+     totalCents: TIER_PRICE_CENTS[tier] * dozens,
+   };
+   customCheckoutIdempotencyKey = newIdempotencyKey();
+   customCheckoutInFlight = false;
+
+   const total = customCheckoutPayload.totalCents;
+
+   // Reset modal state — last session's success view, errors, fallback notice
+   document.getElementById('customCheckoutFormView').hidden = false;
+   document.getElementById('customSuccessView').hidden = true;
+   document.getElementById('customSuccessNotifyFallback').hidden = true;
+   document.getElementById('customCheckoutError').hidden = true;
+   document.getElementById('customCheckoutError').textContent = '';
+
+   // Summary line + total
+   document.getElementById('customCheckoutSummary').innerHTML = `
+     <div class="checkout-summary-row">
+       <div>${TIER_NAME[tier]} <span class="item-qty">× ${dozens}</span></div>
+       <div>${formatUSD(total)}</div>
+     </div>`;
+   document.getElementById('customCheckoutTotal').textContent = formatUSD(total);
+   const payBtn = document.getElementById('customCheckoutPayBtn');
+   payBtn.querySelector('.pay-btn-label').textContent = `Pay ${formatUSD(total)}`;
+   payBtn.classList.remove('is-loading');
+
+   // Open modal first (so user sees "loading payment form" UI rather than dead form)
+   document.getElementById('customCheckoutModal').classList.add('open');
+   document.body.style.overflow = 'hidden';
+
+   // Lazy-init Square + mount payment methods. Pay button stays disabled
+   // until everything's mounted; if any of this throws, surface the error.
+   payBtn.disabled = true;
+   try {
+     await initSquare();
+     const paymentRequest = squarePayments.paymentRequest({
+       countryCode: 'US',
+       currencyCode: 'USD',
+       total: { amount: (total / 100).toFixed(2), label: "MJ's Sweets" },
+       lineItems: [{
+         label: `${TIER_NAME[tier]} × ${dozens}`,
+         amount: (total / 100).toFixed(2),
+       }],
+     });
+     await Promise.all([
+       mountCustomSquareCard(),
+       mountCustomSquareApplePay(paymentRequest),
+       mountCustomSquareGooglePay(paymentRequest),
+     ]);
+     const anyWallet = !document.getElementById('custom-apple-pay-button').hidden
+                    || !document.getElementById('custom-google-pay-button').hidden;
+     document.getElementById('customWalletDivider').hidden = !anyWallet;
+     payBtn.disabled = false;
+   } catch (err) {
+     console.error('Square init failed (custom):', err);
+     showCustomCheckoutError("Couldn't load the payment form. Refresh the page or text Maddie at (504) 559-6466.");
+   }
+ }
+
+ async function mountCustomSquareCard() {
+   if (customSquareCard) {
+     try { await customSquareCard.destroy(); } catch (_) {}
+     customSquareCard = null;
+   }
+   const container = document.getElementById('custom-card-container');
+   container.innerHTML = '';
+   customSquareCard = await squarePayments.card();
+   await customSquareCard.attach('#custom-card-container');
+   customSquareCard.addEventListener('focusClassAdded',   () => container.classList.add('is-focused'));
+   customSquareCard.addEventListener('focusClassRemoved', () => container.classList.remove('is-focused'));
+ }
+
+ async function mountCustomSquareApplePay(paymentRequest) {
+   const btn = document.getElementById('custom-apple-pay-button');
+   btn.hidden = true;
+   if (customSquareApplePay) {
+     try { await customSquareApplePay.destroy(); } catch (_) {}
+     customSquareApplePay = null;
+   }
+   try {
+     customSquareApplePay = await squarePayments.applePay(paymentRequest);
+     btn.hidden = false;
+     btn.onclick = () => handleCustomWalletPayment(customSquareApplePay, 'apple-pay', 'Apple Pay');
+   } catch (err) {
+     console.log('Apple Pay unavailable (custom):', err.message || err);
+   }
+ }
+
+ async function mountCustomSquareGooglePay(paymentRequest) {
+   const container = document.getElementById('custom-google-pay-button');
+   container.hidden = true;
+   container.innerHTML = '';
+   if (customSquareGooglePay) {
+     try { await customSquareGooglePay.destroy(); } catch (_) {}
+     customSquareGooglePay = null;
+   }
+   try {
+     customSquareGooglePay = await squarePayments.googlePay(paymentRequest);
+     await customSquareGooglePay.attach('#custom-google-pay-button', {
+       buttonColor: 'black',
+       buttonType: 'pay',
+       buttonSizeMode: 'fill',
+     });
+     container.hidden = false;
+     container.addEventListener('click', () => handleCustomWalletPayment(customSquareGooglePay, 'google-pay', 'Google Pay'), { once: false });
+   } catch (err) {
+     console.log('Google Pay unavailable (custom):', err.message || err);
+   }
+ }
+
+ // --- Pay handlers ---
+
+ async function handleCustomCheckoutSubmit() {
+   const payBtn = document.getElementById('customCheckoutPayBtn');
+   if (payBtn.disabled) return;
+   if (!customSquareCard) return;
+   try {
+     const tokenResult = await customSquareCard.tokenize();
+     if (tokenResult.status !== 'OK') {
+       const errs = tokenResult.errors?.map(e => e.message).join(' · ') || 'Card details look invalid.';
+       throw new Error(errs);
+     }
+     await processCustomPayment(tokenResult.token, 'card');
+   } catch (err) {
+     console.error('Custom card checkout error:', err);
+     showCustomCheckoutError(err.message || 'Something went wrong with the card.');
+   }
+ }
+
+ async function handleCustomWalletPayment(walletInstance, methodName, methodDisplay) {
+   try {
+     const tokenResult = await walletInstance.tokenize();
+     if (tokenResult.status !== 'OK') {
+       const code = tokenResult.errors?.[0]?.code || '';
+       if (code === 'CANCELED' || code === 'CANCELLED' || code === 'CANCEL') return;
+       throw new Error(tokenResult.errors?.map(e => e.message).join(' · ') || `${methodDisplay} payment failed.`);
+     }
+     await processCustomPayment(tokenResult.token, methodName);
+   } catch (err) {
+     if ((err.message || '').toLowerCase().includes('cancel')) return;
+     console.error(`${methodName} error (custom):`, err);
+     showCustomCheckoutError(err.message || `${methodDisplay} failed. Try again or use card.`);
+   }
+ }
+
+ // Builds multipart FormData from the outer custom-order form (so photos
+ // upload as part of the same request) and POSTs it to /api/contact along
+ // with the payment token + idempotency key. Charge succeeds → success view.
+ // Charge fails → re-enable Pay so user can retry. Notification failures
+ // post-charge are non-fatal; backend returns 200 with `notificationsSent`.
+ async function processCustomPayment(paymentToken, methodName) {
+   const payBtn = document.getElementById('customCheckoutPayBtn');
+   const labelEl = payBtn.querySelector('.pay-btn-label');
+   const totalText = formatUSD(customCheckoutPayload.totalCents);
+   payBtn.disabled = true;
+   payBtn.classList.add('is-loading');
+   labelEl.textContent = 'Processing';
+   customCheckoutInFlight = true;
+
+   try {
+     const form = document.getElementById('customRequestForm');
+     const formData = new FormData(form);
+     formData.append('paymentToken', paymentToken);
+     formData.append('paymentMethod', methodName);
+     formData.append('idempotencyKey', customCheckoutIdempotencyKey);
+     // tier + dozens are already form fields via the radios + number input,
+     // so they ride along automatically.
+
+     const res = await fetch('/api/contact', { method: 'POST', body: formData });
+     const data = await res.json().catch(() => ({}));
+     if (!res.ok) {
+       const msg = data.detail
+         ? `${data.error || 'Error'}: ${data.detail}`
+         : (data.error || 'Payment failed.');
+       throw new Error(msg);
+     }
+     showCustomCheckoutSuccess(data);
+
+     // Reset outer form so a second order doesn't carry stale state.
+     // Photos preview is its own DOM, must be cleared explicitly.
+     form.reset();
+     document.getElementById('reqPhotoPreview').hidden = true;
+     document.getElementById('reqPhotoPreview').innerHTML = '';
+     form.querySelectorAll('.tier-card').forEach(c => c.classList.remove('is-selected'));
+     updateCustomTotal();
+   } catch (err) {
+     console.error('Custom checkout submit error:', err);
+     showCustomCheckoutError(err.message || 'Something went wrong. Please try again.');
+     payBtn.disabled = false;
+     payBtn.classList.remove('is-loading');
+     labelEl.textContent = `Pay ${totalText}`;
+   } finally {
+     customCheckoutInFlight = false;
+   }
+ }
+
+ function showCustomCheckoutSuccess(data) {
+   document.getElementById('customCheckoutFormView').hidden = true;
+   document.getElementById('customSuccessView').hidden = false;
+   const firstName = (customCheckoutCustomer?.name || '').split(' ')[0] || 'there';
+   document.getElementById('customSuccessName').textContent = firstName;
+   document.getElementById('customSuccessOrderId').textContent = data.orderId || '—';
+
+   // Show the "text Maddie the order ID" fallback ONLY when Maddie's notification
+   // email failed. Customer's own confirmation email failure is logged but not
+   // surfaced — they already see the order ID + receipt link, which is enough
+   // self-recovery info.
+   const notify = data.notificationsSent || {};
+   const fallback = document.getElementById('customSuccessNotifyFallback');
+   fallback.hidden = !(notify.maddieEmail === false);
+
+   const link = document.getElementById('customSuccessReceiptLink');
+   if (data.receiptUrl) {
+     link.href = data.receiptUrl;
+     link.style.display = '';
+   } else {
+     link.style.display = 'none';
+   }
+ }
+
+ function showCustomCheckoutError(msg) {
+   const el = document.getElementById('customCheckoutError');
+   el.textContent = msg;
+   el.hidden = false;
+ }
+
+ async function closeCustomCheckoutModal() {
+   // Hard-refuse to close while a charge is in flight — closing mid-payment
+   // would leave the user staring at a stale form while their card is being
+   // charged. The Pay button is .is-loading during this time, so the UX
+   // signal is already there.
+   if (customCheckoutInFlight) return;
+
+   document.getElementById('customCheckoutModal').classList.remove('open');
+   document.body.style.overflow = '';
+
+   const teardown = async (instance) => {
+     if (!instance) return;
+     try { await instance.destroy(); } catch (_) {}
+   };
+   await Promise.all([
+     teardown(customSquareCard),
+     teardown(customSquareApplePay),
+     teardown(customSquareGooglePay),
+   ]);
+   customSquareCard = null;
+   customSquareApplePay = null;
+   customSquareGooglePay = null;
+   customCheckoutCustomer = null;
+   customCheckoutPayload = null;
+   customCheckoutIdempotencyKey = null;
+ }
+
  function showToast(msg) {
  const t = document.getElementById('toast');
  t.textContent = msg;
@@ -3440,53 +4191,56 @@
    });
  }
 
- // POST the custom-order form to /api/contact, which texts Maddie via SignalWire.
- // Shows clear success/error states; never silently fails.
+ // Custom-order form submit — pre-flight validation, then hand off to the
+ // checkout modal. The actual /api/contact POST happens inside processCustomPayment
+ // after Square tokenizes the card / wallet.
  async function handleRequest(e) {
    e.preventDefault();
-   const form = e.target;
-   const submitBtn = document.getElementById('reqSubmit');
    const errorEl = document.getElementById('reqError');
    errorEl.hidden = true;
    errorEl.textContent = '';
+
+   const showError = (msg, focusEl) => {
+     errorEl.textContent = msg;
+     errorEl.hidden = false;
+     if (focusEl) focusEl.focus();
+   };
 
    // Phone digit-count check — the pattern attribute can be satisfied by
    // punctuation alone in some browsers, so verify exactly 10 digits.
    const phoneInput = document.getElementById('reqPhone');
    const phoneDigits = (phoneInput.value || '').replace(/\D/g, '');
    if (phoneDigits.length !== 10) {
-     errorEl.textContent = 'Please enter a valid 10-digit phone number.';
-     errorEl.hidden = false;
-     phoneInput.focus();
-     return;
+     return showError('Please enter a valid 10-digit phone number.', phoneInput);
    }
 
-   submitBtn.disabled = true;
-   const originalLabel = submitBtn.textContent;
-   submitBtn.textContent = 'Sending…';
-
-   try {
-     const formData = new FormData(form);
-     const res = await fetch('/api/contact', { method: 'POST', body: formData });
-     const data = await res.json().catch(() => ({}));
-     if (!res.ok) {
-       const msg = data.detail
-         ? `${data.error || 'Error'}: ${data.detail}`
-         : (data.error || 'Something went wrong. Please try again.');
-       throw new Error(msg);
-     }
-     showToast('💌 Request sent! Maddie will text you back soon.');
-     form.reset();
-     document.getElementById('reqPhotoPreview').hidden = true;
-     document.getElementById('reqPhotoPreview').innerHTML = '';
-   } catch (err) {
-     console.error('Request submit error:', err);
-     errorEl.textContent = err.message || 'Something went wrong. Please text Maddie at (504) 559-6466.';
-     errorEl.hidden = false;
-   } finally {
-     submitBtn.disabled = false;
-     submitBtn.textContent = originalLabel;
+   // Tier picked? (HTML `required` enforces this too, but explicit is friendlier.)
+   const tier = getSelectedTier();
+   if (!tier || !TIER_PRICE_CENTS[tier]) {
+     return showError('Please pick a tier (Signature or Showstopper).');
    }
+
+   const dozens = getSelectedDozens();
+   if (dozens < 1 || dozens > 10) {
+     return showError('Please pick a quantity between 1 and 10 dozen.', document.getElementById('reqDozens'));
+   }
+
+   // Belt-and-suspenders lead-time check — the date picker `min` already
+   // blocks earlier dates, but typing an invalid date directly can bypass it
+   // in some browsers.
+   const dateStr = document.getElementById('reqDate').value;
+   if (!isDateAtLeast14Days(dateStr)) {
+     return showError('Custom orders need at least 14 days lead time. Please pick a later date.', document.getElementById('reqDate'));
+   }
+
+   const customer = {
+     name:  document.getElementById('reqName').value.trim(),
+     phone: phoneInput.value.trim(),
+     email: document.getElementById('reqEmail').value.trim(),
+   };
+
+   // Hand off to the checkout modal — it handles tokenization + POST.
+   await openCustomCheckout(customer, tier, dozens);
  }
 
  // Stamp current year in the footer so it never goes stale
@@ -3997,7 +4751,7 @@
         "name": "Cake Pops",
         "description": "Hand-decorated cake pops on a stick — made from scratch and dressed up. Choose your flavor: Chocolate, Vanilla, Funfetti, Red Velvet, Lemon, or Strawberry. Sold by the dozen.",
         "image": "https://www.mjs-sweets.com/cake_pops.png",
-        "url": "https://www.mjs-sweets.com/#shop",
+        "url": "https://www.mjs-sweets.com/#cake-pops",
         "brand": { "@type": "Brand", "name": "MJ's Sweets" },
         "category": "Dessert",
         "offers": {
@@ -4005,7 +4759,7 @@
           "price": "24.00",
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
-          "url": "https://www.mjs-sweets.com/#shop",
+          "url": "https://www.mjs-sweets.com/#cake-pops",
           "seller": { "@id": "https://www.mjs-sweets.com/#bakery" },
           "hasMerchantReturnPolicy": {
             "@type": "MerchantReturnPolicy",
@@ -4023,7 +4777,7 @@
         "name": "Rice Krispies Treats",
         "description": "Marshmallow-y rice krispy treats, drizzled with chocolate and dressed up. Made fresh from scratch. Sold by the dozen.",
         "image": "https://www.mjs-sweets.com/rice_krispies.png",
-        "url": "https://www.mjs-sweets.com/#shop",
+        "url": "https://www.mjs-sweets.com/#rice-krispies",
         "brand": { "@type": "Brand", "name": "MJ's Sweets" },
         "category": "Dessert",
         "offers": {
@@ -4031,7 +4785,7 @@
           "price": "24.00",
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
-          "url": "https://www.mjs-sweets.com/#shop",
+          "url": "https://www.mjs-sweets.com/#rice-krispies",
           "seller": { "@id": "https://www.mjs-sweets.com/#bakery" },
           "hasMerchantReturnPolicy": {
             "@type": "MerchantReturnPolicy",
@@ -4049,7 +4803,7 @@
         "name": "Dipped Pretzel Rods",
         "description": "Sweet & salty crunch — pretzel rods dipped in chocolate and decorated. Sold by the dozen.",
         "image": "https://www.mjs-sweets.com/pretzel_rods.png",
-        "url": "https://www.mjs-sweets.com/#shop",
+        "url": "https://www.mjs-sweets.com/#dipped-pretzel-rods",
         "brand": { "@type": "Brand", "name": "MJ's Sweets" },
         "category": "Dessert",
         "offers": {
@@ -4057,7 +4811,7 @@
           "price": "24.00",
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
-          "url": "https://www.mjs-sweets.com/#shop",
+          "url": "https://www.mjs-sweets.com/#dipped-pretzel-rods",
           "seller": { "@id": "https://www.mjs-sweets.com/#bakery" },
           "hasMerchantReturnPolicy": {
             "@type": "MerchantReturnPolicy",
