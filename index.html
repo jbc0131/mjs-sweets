@@ -1011,9 +1011,16 @@
  display: flex;
  align-items: center;
  justify-content: center;
- font-size: 6rem;
  box-shadow: 0 20px 60px rgba(255, 59, 127, 0.25);
  position: relative;
+ padding: 8px; /* creates a pink-gradient ring around the photo */
+ }
+ .about-photo img {
+ width: 100%;
+ height: 100%;
+ object-fit: cover;
+ border-radius: 50%;
+ display: block;
  }
  .about-photo::after {
  content: '✨';
@@ -2080,7 +2087,9 @@
 <!-- ABOUT -->
 <section id="about">
  <div class="about-inner">
- <div class="about-photo">👩‍🍳</div>
+ <div class="about-photo">
+ <img src="/maddie-mjs-sweets-baker.jpg" alt="Maddie, owner and baker at MJ's Sweets in Madisonville, Louisiana" />
+ </div>
  <div class="about-text">
  <h2>Hi, I'm <em>Maddie</em>, and I bake everything from scratch.</h2>
  <p>What started as decorating a few birthday cookies for my kids' friends turned into something I genuinely love doing. Every cookie that leaves my kitchen in Madisonville is hand-cut, hand-iced, and packaged like it's going to someone I care about, because, honestly, it is.</p>
