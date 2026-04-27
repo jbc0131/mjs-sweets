@@ -817,6 +817,31 @@
  .portfolio-grid { column-count: 1; }
  }
 
+ /* "Show more" button — sits below the masonry grid, lets customers reach
+  the contact form quickly while still offering full portfolio depth */
+ .portfolio-more-wrap {
+ text-align: center;
+ margin-top: 1.25rem;
+ }
+ .portfolio-more-btn {
+ background: transparent;
+ color: var(--cream);
+ border: 1px solid rgba(255, 248, 240, 0.35);
+ padding: 0.7rem 1.4rem;
+ border-radius: 999px;
+ font-family: 'DM Sans', sans-serif;
+ font-weight: 600;
+ font-size: 0.9rem;
+ cursor: pointer;
+ transition: all 0.2s;
+ }
+ .portfolio-more-btn:hover {
+ background: var(--yellow);
+ color: var(--ink);
+ border-color: var(--yellow);
+ transform: translateY(-2px);
+ }
+
  /* ---------- LIGHTBOX ---------- */
  .lightbox {
  position: fixed;
@@ -2020,6 +2045,9 @@
  <div class="portfolio">
  <div class="portfolio-filters" id="portfolioFilters" role="tablist" aria-label="Filter portfolio by category"></div>
  <div class="portfolio-grid" id="portfolioGrid"></div>
+ <div class="portfolio-more-wrap">
+ <button class="portfolio-more-btn" id="portfolioMoreBtn" onclick="showAllPortfolio()" hidden></button>
+ </div>
  </div>
 
  <div class="request-box">
@@ -3391,6 +3419,7 @@
    'baby-shower': { label: 'Baby Shower',        emoji: '👶' },
    'faith':       { label: 'Faith & Milestones', emoji: '⛪' },
    'graduation':  { label: 'Graduation',         emoji: '🎓' },
+   'corporate':   { label: 'Corporate',          emoji: '🎁' },
  };
 
  const PORTFOLIO = [
@@ -3538,9 +3567,34 @@
    { src: '/portfolio/graduation/graduation-cookies-bowling-senior-2026.jpg',
      alt: 'Bowling themed Senior 2026 graduation cookies with bowling pins, blue and green bowling balls, and class year designs',
      category: 'graduation', caption: 'Bowling · Senior 2026' },
+   // Corporate & Bulk — large orders, gift boxes, employee/client appreciation
+   { src: '/portfolio/corporate/corporate-cookies-christmas-gift-boxes-personalized.jpg',
+     alt: 'Stacked white corporate Christmas cookie gift boxes with red ribbon bows and personalized "Merry Christmas Jim Mawger" name tags',
+     category: 'corporate', caption: 'Christmas gift boxes · personalized' },
+   { src: '/portfolio/corporate/corporate-cookies-bulk-individually-wrapped-favors.jpg',
+     alt: 'Hundreds of individually packaged single cookie favors with MJ\'s Sweets branded labels for corporate event',
+     category: 'corporate', caption: 'Bulk favors · individually wrapped' },
+   { src: '/portfolio/corporate/corporate-cookies-bulk-frosted-cookie-cups.jpg',
+     alt: 'Large quantity of single-serve frosted cookie cups with MJ\'s Sweets branded lids ready for corporate distribution',
+     category: 'corporate', caption: 'Bulk frosted cookie cups' },
+   { src: '/portfolio/corporate/corporate-cookies-christmas-bulk-bow-boxes.jpg',
+     alt: 'Twenty-four matching white Christmas cookie boxes with red ribbon bows arranged in front of decorated tree',
+     category: 'corporate', caption: 'Christmas bulk · 24 box order' },
+   { src: '/portfolio/corporate/corporate-cookies-holiday-gift-table-display.jpg',
+     alt: 'Holiday gift table display with dozens of white cookie boxes tied with red ribbons in front of decorated Christmas tree',
+     category: 'corporate', caption: 'Holiday gift table display' },
+   { src: '/portfolio/corporate/corporate-cookies-christmas-variety-boxes-santa-snowman.jpg',
+     alt: 'Stacked clear-window Christmas cookie variety boxes featuring Santa, snowman, candy cane, and gingerbread designs',
+     category: 'corporate', caption: 'Christmas variety boxes' },
  ];
 
+ // How many photos to show before "Show all" reveals the rest. Keeps the
+ // section scrollable in seconds and limits initial bandwidth — important for
+ // mobile customers who don't want to scroll through 50+ images to reach the form.
+ const PORTFOLIO_INITIAL_COUNT = 9;
+
  let portfolioActiveFilter = 'all';
+ let portfolioShowAll = false;
  let lightboxIndex = 0;
  let lightboxFiltered = [];
 
@@ -3579,15 +3633,32 @@
      ? PORTFOLIO
      : PORTFOLIO.filter(p => p.category === portfolioActiveFilter);
 
-   document.getElementById('portfolioGrid').innerHTML = filtered.map((p, i) => `
+   const visible = portfolioShowAll ? filtered : filtered.slice(0, PORTFOLIO_INITIAL_COUNT);
+   const hiddenCount = filtered.length - visible.length;
+
+   document.getElementById('portfolioGrid').innerHTML = visible.map((p, i) => `
      <button class="portfolio-tile" onclick="openLightbox(${i})" aria-label="View larger: ${escapeAttr(p.caption)}">
        <img src="${p.src}" alt="${escapeAttr(p.alt)}" loading="lazy" />
      </button>
    `).join('');
+
+   const moreBtn = document.getElementById('portfolioMoreBtn');
+   if (hiddenCount > 0) {
+     moreBtn.hidden = false;
+     moreBtn.textContent = `Show ${hiddenCount} more →`;
+   } else {
+     moreBtn.hidden = true;
+   }
+ }
+
+ function showAllPortfolio() {
+   portfolioShowAll = true;
+   renderPortfolioGrid();
  }
 
  function setPortfolioFilter(cat) {
    portfolioActiveFilter = cat;
+   portfolioShowAll = false; // reset on filter change
    renderPortfolioFilters();
    renderPortfolioGrid();
  }
