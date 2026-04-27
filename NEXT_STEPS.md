@@ -13,30 +13,22 @@ Storefront is **live in production at https://www.mjs-sweets.com** with:
 
 ---
 
-## Priority 1 — Fix custom-order form notification reliability (do this first)
+## Priority 1 — Custom-order form notifications
 
-Custom-order form currently delivers SMS only intermittently due to SignalWire trial-mode prefix triggering carrier filtering. Two paths, do **both** for redundancy:
+**Status: ✅ Done via Resend email + ⚠️ SignalWire SMS (best-effort)**
 
-### Path A — Add Resend email as the reliable channel (~30 minutes)
+The custom-order form now sends a branded HTML email via Resend on every submission. Email is the gating channel — if it lands, the form claims success regardless of SMS state. SignalWire SMS still fires in parallel as a "buzz alert" when carriers cooperate, but its failure is non-fatal.
 
-Email is more reliable than SMS for transactional notifications and doesn't have carrier filtering issues. Adds ~50 lines to `api/contact.js` to fire an email alongside the SMS.
+`NOTIFY_EMAIL` accepts a comma-separated list, so both Maddie and Jordan can receive each order. Reply-To is set to the customer's email, so hitting Reply in either inbox responds straight to them.
 
-- [ ] Sign up at https://resend.com (free, no credit card required)
-- [ ] Verify `mjs-sweets.com` domain in Resend (3-4 DNS records to add at Vercel; ~5 min, auto-verifies)
-- [ ] Get Resend API key
-- [ ] Add Vercel env vars: `RESEND_API_KEY` (Sensitive), `RESEND_FROM_EMAIL` = `orders@mjs-sweets.com`
-- [ ] Send Claude the API key + confirmation; we wire up the email pipeline
+### Optional — Complete SignalWire A2P 10DLC registration to make SMS reliable too
 
-### Path B — Complete SignalWire A2P 10DLC registration (~1 week wait)
-
-Registers the SignalWire number as a legitimate business sender, removes the "[SignalWire Free Trial]" prefix, lifts carrier filtering. Required for SMS to ever be reliable in the long term.
+Removes the "[SignalWire Free Trial]" prefix that triggers carrier filtering. Email is now reliable on its own, but if you want SMS as a redundant alert too, this is how to fix it.
 
 - [ ] SignalWire dashboard → Compliance → A2P 10DLC → register Sole Proprietor brand ($4 one-time)
 - [ ] Register a campaign for "MJ's Sweets order notifications" (~$2/month)
 - [ ] Wait 1-7 business days for carrier approval
-- [ ] After approval, SMS becomes ~99% deliverable
-
-**Do A this week (instant fix), B in parallel (proper long-term fix). After both: form notifications go via both channels, redundant + reliable.**
+- [ ] After approval, SMS becomes ~99% deliverable; both channels then fire reliably
 
 ---
 
@@ -50,12 +42,12 @@ Fully scoped in `ORDER_TRACKING_PLAN.md`. Highlights:
 - Each photo upload triggers a customer email with the photo + tracking link
 - Vercel cron jobs for pickup reminders (24hr before, day-of) and post-pickup review request
 
-Estimated 7 hours of build, broken into 11 phases. Requires Resend setup (Priority 1 Path A) as a prerequisite.
+**Updated estimate: ~5 hours** (was 7 — Resend infrastructure is now done so the email phase is much faster).
 
 When ready to build:
 - [ ] Read `ORDER_TRACKING_PLAN.md` top to bottom
-- [ ] Complete the setup checklist in that doc (env vars, password, cookie secrets)
-- [ ] Reply to Claude with credentials + decision overrides; build begins
+- [ ] Complete the **4 remaining env vars** in Vercel: `ADMIN_PASSWORD`, `ADMIN_COOKIE_SECRET`, `ORDER_VERIFY_SECRET`, `SITE_URL` (~5 min)
+- [ ] Reply to Claude with confirmation + decision overrides; build begins
 
 ---
 
