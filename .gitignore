@@ -23,3 +23,6 @@ yarn-error.log*
 # Build artifacts
 dist/
 build/
+
+# Claude Code local settings (per-developer overrides; settings.json IS committed)
+.claude/settings.local.json

@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(node --check:*)",
+      "Bash(npm install:*)",
+      "Bash(npm view:*)",
+      "Bash(curl -I https://www.mjs-sweets.com:*)",
+      "Bash(curl -I https://mjs-sweets.com:*)",
+      "Bash(dig:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(python3:*)",
+      "Bash(mkdir:*)",
+      "Bash(file:*)",
+      "Bash(wc:*)",
+      "Bash(md5sum:*)",
+      "Bash(diff:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf /:*)",
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)"
+    ]
+  }
+}
