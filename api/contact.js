@@ -59,18 +59,48 @@ async function handler(req, res) {
     const v = fields[key];
     return Array.isArray(v) ? v[0] : v;
   };
-  const name      = sanitize(get('name'));
-  const contact   = sanitize(get('contact'));
-  const occasion  = sanitize(get('occasion'));
-  const dateNeeded = sanitize(get('date_needed'));
-  const vision    = sanitize(get('vision'));
+  const name           = sanitize(get('name'));
+  const phone          = sanitize(get('phone'));
+  const email          = sanitize(get('email'));
+  const occasion       = sanitize(get('occasion'));
+  const occasionOther  = sanitize(get('occasion_other'));
+  const dateNeeded     = sanitize(get('date_needed'));
+  const vision         = sanitize(get('vision'));
 
-  if (!name || !contact || !occasion || !dateNeeded || !vision) {
+  if (!name || !phone || !email || !occasion || !dateNeeded || !vision) {
     return res.status(400).json({
       error: 'Missing required fields',
-      detail: 'Name, contact, occasion, date, and vision are all required.',
+      detail: 'Name, phone, email, occasion, date, and vision are all required.',
     });
   }
+
+  // Phone must contain exactly 10 digits (matches client-side validation)
+  if (phone.replace(/\D/g, '').length !== 10) {
+    return res.status(400).json({
+      error: 'Invalid phone number',
+      detail: 'Please enter a valid 10-digit phone number.',
+    });
+  }
+
+  // Lightweight email shape check — browser already validated, this is belt-and-suspenders
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({
+      error: 'Invalid email address',
+      detail: 'Please enter a valid email address.',
+    });
+  }
+
+  // If they picked "Other," require they tell us what
+  if (occasion === 'Other' && !occasionOther) {
+    return res.status(400).json({
+      error: 'Missing occasion details',
+      detail: 'Please tell us more about the occasion.',
+    });
+  }
+  // Combine occasion + other for downstream display
+  const occasionDisplay = (occasion === 'Other' && occasionOther)
+    ? `Other — ${occasionOther}`
+    : occasion;
 
   // ---- Collect uploaded photos ----
   let photoFiles = files?.inspiration_photos;
@@ -134,8 +164,9 @@ async function handler(req, res) {
     '🍪 New custom order request',
     '',
     `From: ${name}`,
-    `Reach: ${contact}`,
-    `Occasion: ${occasion}`,
+    `Phone: ${phone}`,
+    `Email: ${email}`,
+    `Occasion: ${occasionDisplay}`,
     `Needed by: ${formatDate(dateNeeded)}`,
     '',
     `Vision: ${truncate(vision, 400)}`,
