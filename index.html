@@ -2128,7 +2128,12 @@
 <section id="about">
  <div class="about-inner">
  <div class="about-photo">
- <img src="/maddie-mjs-sweets-baker.jpg" alt="Maddie, owner and baker at MJ's Sweets in Madisonville, Louisiana" />
+ <picture>
+ <source srcset="/maddie-mjs-sweets-baker.webp" type="image/webp">
+ <img src="/maddie-mjs-sweets-baker.jpg"
+      alt="Maddie, owner and baker at MJ's Sweets in Madisonville, Louisiana"
+      width="705" height="999" loading="lazy" decoding="async" />
+ </picture>
  </div>
  <div class="about-text">
  <h2>Hi, I'm <em>Maddie</em>, and I bake everything from scratch.</h2>
@@ -2410,7 +2415,10 @@
  <button class="lightbox-prev" onclick="event.stopPropagation(); lightboxNav(-1)" aria-label="Previous photo">‹</button>
  <button class="lightbox-next" onclick="event.stopPropagation(); lightboxNav(1)" aria-label="Next photo">›</button>
  <div class="lightbox-content" onclick="event.stopPropagation()">
+ <picture>
+ <source id="lightboxSource" type="image/webp" />
  <img class="lightbox-img" id="lightboxImg" alt="" />
+ </picture>
  <div class="lightbox-caption" id="lightboxCaption"></div>
  </div>
 </div>
@@ -2569,12 +2577,86 @@
 
  // ---------- Display helpers ----------
 
- // Render a product's visual: real photo if uploaded, emoji as fallback.
- // The product's gradient background (.cakepops, .mothers, etc.) shows through
- // any transparent areas of the photo — keeps brand colors even with real images.
+ // Intrinsic dimensions for every image we render. Used to emit width/height
+ // attributes so the browser reserves the right space before images load
+ // (eliminates Cumulative Layout Shift, a Core Web Vitals factor).
+ // Keyed by absolute path; values are [width, height] in pixels.
+ const IMAGE_DIMS = {
+   '/cake_pops.png': [511, 488],
+   '/maddie-mjs-sweets-baker.jpg': [705, 999],
+   '/portfolio/baby-shower/baby-shower-cookies-elephant-lavender.jpg': [1366, 1600],
+   '/portfolio/baby-shower/baby-shower-cookies-here-comes-the-sun.jpg': [1600, 1248],
+   '/portfolio/baby-shower/baby-shower-cookies-mickey-blue-oh-boy.jpg': [1417, 1600],
+   '/portfolio/baby-shower/baby-shower-cookies-mickey-pink-gold.jpg': [1200, 1600],
+   '/portfolio/baby-shower/baby-shower-cookies-nautical-its-a-boy.jpg': [1200, 1600],
+   '/portfolio/baby-shower/baby-shower-cookies-twins-sweet-peas.jpg': [1446, 1600],
+   '/portfolio/baby-shower/baby-shower-cookies-winnie-the-pooh.jpg': [1200, 1600],
+   '/portfolio/baby-shower/gender-reveal-cookies-pink-teal-oh-baby.jpg': [1600, 1267],
+   '/portfolio/birthdays/birthday-cookies-aviator-stars-age-one.jpg': [1435, 1600],
+   '/portfolio/birthdays/birthday-cookies-bluey-pastel.jpg': [1200, 1600],
+   '/portfolio/birthdays/birthday-cookies-cow-print-pink-farmhouse.jpg': [1320, 1600],
+   '/portfolio/birthdays/birthday-cookies-daisies-clover-monogram.jpg': [1350, 1600],
+   '/portfolio/birthdays/birthday-cookies-dinosaurs-bright.jpg': [1600, 1200],
+   '/portfolio/birthdays/birthday-cookies-dinosaurs-carter.jpg': [1600, 1514],
+   '/portfolio/birthdays/birthday-cookies-farm-animals.jpg': [1600, 1170],
+   '/portfolio/birthdays/birthday-cookies-fishing-reeling-in-the-big-one.jpg': [1600, 1200],
+   '/portfolio/birthdays/birthday-cookies-fortnite-gamer.jpg': [1200, 1600],
+   '/portfolio/birthdays/birthday-cookies-hello-kitty-age-six.jpg': [1200, 1600],
+   '/portfolio/birthdays/birthday-cookies-jumping-silhouettes-green.jpg': [1200, 1600],
+   '/portfolio/birthdays/birthday-cookies-mickey-minnie-mouse.jpg': [1473, 1600],
+   '/portfolio/birthdays/birthday-cookies-pink-gold-monogram-adult.jpg': [1263, 1600],
+   '/portfolio/birthdays/birthday-cookies-race-cars-speed-limit.jpg': [1600, 1221],
+   '/portfolio/birthdays/birthday-cookies-summer-beach-sun-sunglasses.jpg': [1600, 1193],
+   '/portfolio/birthdays/birthday-cookies-two-tti-frutti.jpg': [1495, 1600],
+   '/portfolio/corporate/corporate-cookies-bulk-frosted-cookie-cups.jpg': [1494, 1600],
+   '/portfolio/corporate/corporate-cookies-bulk-individually-wrapped-favors.jpg': [1200, 1600],
+   '/portfolio/corporate/corporate-cookies-christmas-bulk-bow-boxes.jpg': [1600, 1141],
+   '/portfolio/corporate/corporate-cookies-christmas-gift-boxes-personalized.jpg': [1200, 1600],
+   '/portfolio/corporate/corporate-cookies-christmas-variety-boxes-santa-snowman.jpg': [1600, 1200],
+   '/portfolio/corporate/corporate-cookies-holiday-gift-table-display.jpg': [1600, 1200],
+   '/portfolio/faith/baptism-cookies-blue-made-new-bible-verse.jpg': [1200, 1600],
+   '/portfolio/faith/baptism-cookies-white-gold-cross-dove.jpg': [1600, 1203],
+   '/portfolio/faith/bible-study-cookies-take-what-you-need-crosses.jpg': [1200, 1600],
+   '/portfolio/faith/first-communion-cookies-white-gold-floral.jpg': [1342, 1600],
+   '/portfolio/graduation/graduation-cookies-bowling-senior-2026.jpg': [1316, 1600],
+   '/portfolio/graduation/graduation-cookies-class-of-2025-congrats-maggie.jpg': [1600, 1568],
+   '/portfolio/graduation/graduation-cookies-class-of-2031-paws.jpg': [1200, 1600],
+   '/portfolio/graduation/graduation-cookies-maroon-personalized.jpg': [1600, 1129],
+   '/portfolio/graduation/graduation-cookies-royal-blue-yellow.jpg': [960, 720],
+   '/portfolio/graduation/graduation-cookies-star-wars-themed.jpg': [1600, 1239],
+   '/portfolio/holidays/christmas-cookies-classic-santa-tree.jpg': [1600, 1200],
+   '/portfolio/holidays/easter-cookies-bunny-peeps-eggs.jpg': [1200, 1600],
+   '/portfolio/holidays/easter-cookies-peeps-he-is-risen.jpg': [1345, 1600],
+   '/portfolio/holidays/halloween-cookies-spooky-classic.jpg': [1600, 1181],
+   '/portfolio/holidays/valentines-cookies-conversation-hearts.jpg': [1200, 1600],
+   '/portfolio/holidays/valentines-cookies-romantic-adult-pink-red.jpg': [1600, 1261],
+   '/portfolio/wedding/bridal-cookies-modern-black-purple.jpg': [1200, 1600],
+   '/portfolio/wedding/bridal-shower-cookies-pastel-blue-green.jpg': [1200, 1600],
+   '/portfolio/wedding/bride-to-be-cookies-pink-rose.jpg': [1200, 1600],
+   '/portfolio/wedding/engagement-cookies-blue-and-gold.jpg': [1200, 1600],
+   '/portfolio/wedding/engagement-cookies-emerald-and-gold.jpg': [1200, 1600],
+   '/portfolio/wedding/wedding-cookies-gold-monogram.jpg': [1200, 1600],
+   '/pretzel_rods.png': [473, 528],
+   '/rice_krispies.png': [454, 549],
+ };
+
+ // Convert any image path to its WebP variant (e.g., /foo.jpg → /foo.webp).
+ // WebP files exist alongside the JPEGs/PNGs and are 25-40% smaller.
+ function toWebP(src) {
+   return src.replace(/\.(jpg|jpeg|png)$/i, '.webp');
+ }
+
+ // Render a product's visual: real photo as <picture> with WebP + JPEG/PNG
+ // fallback, or emoji if no photo. The product's gradient background
+ // (.cakepops, .mothers, etc.) shows through any transparent areas.
  function renderProductImage(p) {
    if (p.photo) {
-     return `<img src="${p.photo}" alt="${p.name}" class="product-photo" loading="lazy" />`;
+     const dims = IMAGE_DIMS[p.photo] || [800, 800];
+     return `<picture>
+       <source srcset="${toWebP(p.photo)}" type="image/webp">
+       <img src="${p.photo}" alt="${p.name}" class="product-photo"
+            width="${dims[0]}" height="${dims[1]}" loading="lazy" decoding="async" />
+     </picture>`;
    }
    return p.img;
  }
@@ -3639,11 +3721,17 @@
    const visible = portfolioShowAll ? filtered : filtered.slice(0, PORTFOLIO_INITIAL_COUNT);
    const hiddenCount = filtered.length - visible.length;
 
-   document.getElementById('portfolioGrid').innerHTML = visible.map((p, i) => `
+   document.getElementById('portfolioGrid').innerHTML = visible.map((p, i) => {
+     const dims = IMAGE_DIMS[p.src] || [1200, 1600];
+     return `
      <button class="portfolio-tile" onclick="openLightbox(${i})" aria-label="View larger: ${escapeAttr(p.caption)}">
-       <img src="${p.src}" alt="${escapeAttr(p.alt)}" loading="lazy" />
-     </button>
-   `).join('');
+       <picture>
+         <source srcset="${toWebP(p.src)}" type="image/webp">
+         <img src="${p.src}" alt="${escapeAttr(p.alt)}"
+              width="${dims[0]}" height="${dims[1]}" loading="lazy" decoding="async" />
+       </picture>
+     </button>`;
+   }).join('');
 
    const moreBtn = document.getElementById('portfolioMoreBtn');
    if (hiddenCount > 0) {
@@ -3682,8 +3770,11 @@
  function showLightboxPhoto() {
    const photo = lightboxFiltered[lightboxIndex];
    if (!photo) return;
-   document.getElementById('lightboxImg').src = photo.src;
-   document.getElementById('lightboxImg').alt = photo.alt;
+   const src = document.getElementById('lightboxSource');
+   const img = document.getElementById('lightboxImg');
+   if (src) src.srcset = toWebP(photo.src);
+   img.src = photo.src;
+   img.alt = photo.alt;
    document.getElementById('lightboxCaption').textContent = photo.caption;
  }
 
@@ -3824,7 +3915,11 @@
   "url": "https://www.mjs-sweets.com/",
   "telephone": "+1-504-559-6466",
   "image": "https://www.mjs-sweets.com/mjs_sweets_logo_louisiana.JPG",
-  "logo": "https://www.mjs-sweets.com/mjs_sweets_logo_louisiana.JPG",
+  "logo": {
+    "@type": "ImageObject",
+    "url": "https://www.mjs-sweets.com/mjs_sweets_logo_louisiana.JPG",
+    "caption": "MJ's Sweets logo"
+  },
   "priceRange": "$",
   "address": {
     "@type": "PostalAddress",
@@ -3882,6 +3977,77 @@
   ],
   "sameAs": [
     "https://www.facebook.com/mjssweets25"
+  ]
+}
+</script>
+
+<!-- Product schema for the year-round items with real product photography.
+     Eligible for Google Shopping rich results and product carousels. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "item": {
+        "@type": "Product",
+        "name": "Cake Pops",
+        "description": "Hand-decorated cake pops on a stick — made from scratch and dressed up. Choose your flavor: Chocolate, Vanilla, Funfetti, Red Velvet, Lemon, or Strawberry. Sold by the dozen.",
+        "image": "https://www.mjs-sweets.com/cake_pops.png",
+        "brand": { "@type": "Brand", "name": "MJ's Sweets" },
+        "category": "Dessert",
+        "offers": {
+          "@type": "Offer",
+          "price": "24.00",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.mjs-sweets.com/#shop",
+          "seller": { "@type": "LocalBusiness", "name": "MJ's Sweets" }
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "item": {
+        "@type": "Product",
+        "name": "Rice Krispies Treats",
+        "description": "Marshmallow-y rice krispy treats, drizzled with chocolate and dressed up. Made fresh from scratch. Sold by the dozen.",
+        "image": "https://www.mjs-sweets.com/rice_krispies.png",
+        "brand": { "@type": "Brand", "name": "MJ's Sweets" },
+        "category": "Dessert",
+        "offers": {
+          "@type": "Offer",
+          "price": "24.00",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.mjs-sweets.com/#shop",
+          "seller": { "@type": "LocalBusiness", "name": "MJ's Sweets" }
+        }
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "item": {
+        "@type": "Product",
+        "name": "Dipped Pretzel Rods",
+        "description": "Sweet & salty crunch — pretzel rods dipped in chocolate and decorated. Sold by the dozen.",
+        "image": "https://www.mjs-sweets.com/pretzel_rods.png",
+        "brand": { "@type": "Brand", "name": "MJ's Sweets" },
+        "category": "Dessert",
+        "offers": {
+          "@type": "Offer",
+          "price": "24.00",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock",
+          "url": "https://www.mjs-sweets.com/#shop",
+          "seller": { "@type": "LocalBusiness", "name": "MJ's Sweets" }
+        }
+      }
+    }
   ]
 }
 </script>

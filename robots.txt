@@ -15,5 +15,6 @@ Disallow: /admin/
 # Customer order tracking pages — auth-gated and personal
 Disallow: /order/
 
-# Where the sitemap lives — helps Google discover and re-crawl pages quickly
+# Where the sitemaps live — helps Google discover and re-crawl pages + images
 Sitemap: https://www.mjs-sweets.com/sitemap.xml
+Sitemap: https://www.mjs-sweets.com/sitemap-images.xml
