@@ -6,8 +6,8 @@
 <meta name="color-scheme" content="light only" />
 <meta name="supported-color-schemes" content="light" />
 <meta name="theme-color" content="#FFF8F0" />
-<title>MJ's Sweets, From Scratch With Love</title>
-<meta name="description" content="Hand-decorated sugar cookies, marshmallow rice krispy treats, and custom edible art — made from scratch in Madisonville, LA. Serving the Northshore: Mandeville, Covington, Hammond, Folsom, Abita Springs, Ponchatoula, and beyond." />
+<title>MJ's Sweets · Custom Cookies in Madisonville, LA</title>
+<meta name="description" content="Custom hand-decorated cookies for weddings, birthdays, baby showers, baptisms, and holidays. Made from scratch in Madisonville, LA. Serving the entire Northshore." />
 <meta name="author" content="MJ's Sweets" />
 <link rel="canonical" href="https://www.mjs-sweets.com/" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -15,20 +15,23 @@
 <!-- Open Graph (Facebook, iMessage, Slack previews) -->
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="MJ's Sweets" />
-<meta property="og:title" content="MJ's Sweets — From Scratch With Love" />
-<meta property="og:description" content="Hand-decorated sugar cookies and custom edible art, made from scratch in Madisonville, LA. Serving the Northshore." />
+<meta property="og:title" content="MJ's Sweets · Custom Cookies in Madisonville, LA" />
+<meta property="og:description" content="Custom hand-decorated cookies for weddings, birthdays, baby showers, baptisms, and holidays. Made from scratch in Madisonville, LA — serving the Northshore." />
 <meta property="og:image" content="https://www.mjs-sweets.com/mjs_sweets_logo_louisiana.JPG" />
 <meta property="og:url" content="https://www.mjs-sweets.com/" />
 <meta property="og:locale" content="en_US" />
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="MJ's Sweets — From Scratch With Love" />
-<meta name="twitter:description" content="Hand-decorated sugar cookies and custom edible art, made from scratch in Madisonville, LA." />
+<meta name="twitter:title" content="MJ's Sweets · Custom Cookies in Madisonville, LA" />
+<meta name="twitter:description" content="Custom hand-decorated cookies for every celebration. Made from scratch in Madisonville, LA — serving the Northshore." />
 <meta name="twitter:image" content="https://www.mjs-sweets.com/mjs_sweets_logo_louisiana.JPG" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Portfolio photos served from Vercel Blob — preconnect cuts ~100ms off the
+     first photo load by establishing TCP + TLS early. -->
+<link rel="preconnect" href="https://public.blob.vercel-storage.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,400&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
  :root {
@@ -3841,8 +3844,103 @@
   ],
   "servesCuisine": "Bakery",
   "paymentAccepted": "Credit Card, Debit Card, Apple Pay, Google Pay",
+  "currenciesAccepted": "USD",
+  "founder": {
+    "@type": "Person",
+    "name": "Maddie",
+    "jobTitle": "Owner & Baker"
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "5.0",
+    "reviewCount": "10",
+    "bestRating": "5",
+    "worstRating": "5"
+  },
+  "review": [
+    {
+      "@type": "Review",
+      "author": { "@type": "Person", "name": "Jamie Lynn M." },
+      "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+      "reviewBody": "Delicious! Reliable! Highly recommend!",
+      "datePublished": "2025-09"
+    },
+    {
+      "@type": "Review",
+      "author": { "@type": "Person", "name": "Amy L." },
+      "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+      "reviewBody": "Our daughter's baptism cookies were absolutely beautiful! Lemon and vanilla, perfect and delicious. MJ was a pleasure to work with.",
+      "datePublished": "2025-08"
+    },
+    {
+      "@type": "Review",
+      "author": { "@type": "Person", "name": "Ashley F." },
+      "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+      "reviewBody": "Her rice krispy treats are so good and I can't wait to try more of her baked goods. Definitely recommend 100/10!",
+      "datePublished": "2025-07"
+    }
+  ],
   "sameAs": [
     "https://www.facebook.com/mjssweets25"
+  ]
+}
+</script>
+
+<!-- FAQPage schema — eligible for Google's expandable Q&A rich result.
+     Each question + answer block here mirrors what's in the FAQ section. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What's the flavor profile?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Both the cookie and the icing are made completely from scratch with our signature almond flavor profile. It's that warm, bakery-style taste that keeps people coming back for just one more. Pillowy soft, never dry, with icing that sets perfectly so it's beautiful and delicious."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Are the cookies nut free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes — our lemon and vanilla cookies are 100% nut free and just as delicious. Just let us know when you order and we'll make sure your set is made nut free from start to finish. Our standard almond flavor does contain nuts, so always mention any allergies when you reach out."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "When can I order seasonal cookie sets?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Each seasonal set follows the same timeline: ordering opens 4 weeks before the holiday, and orders close 3 days before the holiday so we have time to make everything beautifully. Seasonal sets are limited and often sell out before the deadline."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How far in advance should I place a custom cookie order?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "For custom designs, please give us at least 2 weeks. Earlier is even better, especially during busy seasons like graduation, Mother's Day, and Christmas. Need something rushed? Text us anyway — we can sometimes squeeze it in."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Where do I pick up my order?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Pickup is in Madisonville, Louisiana. We'll send you the exact address and a pickup window once your order is confirmed. We serve the entire Northshore: Mandeville, Covington, Hammond, Folsom, Abita Springs, Ponchatoula, and beyond."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What's the minimum cookie order?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Custom orders start at 1 dozen. For smaller treats, our seasonal sets are perfect for gifting without committing to a big order."
+      }
+    }
   ]
 }
 </script>
