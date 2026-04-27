@@ -160,22 +160,22 @@ async function handler(req, res) {
   }
 
   // ---- Build SMS body ----
+  // No emoji on purpose: emojis force Unicode (UCS-2) encoding, capping each
+  // SMS segment at 70 chars instead of 160. Plain ASCII keeps the message in
+  // GSM-7 encoding, fewer segments, lower cost, much better deliverability
+  // (multi-segment messages get filtered more aggressively by US carriers).
   const lines = [
-    '🍪 New custom order request',
+    `New custom order from ${name}`,
+    `${phone} | ${email}`,
+    `${occasionDisplay} - needs ${formatDate(dateNeeded)}`,
     '',
-    `From: ${name}`,
-    `Phone: ${phone}`,
-    `Email: ${email}`,
-    `Occasion: ${occasionDisplay}`,
-    `Needed by: ${formatDate(dateNeeded)}`,
-    '',
-    `Vision: ${truncate(vision, 400)}`,
+    `Vision: ${truncate(vision, 200)}`,
   ];
   if (photoUrls.length > 0) {
     lines.push('', `Photos (${photoUrls.length}):`);
     photoUrls.forEach(url => lines.push(url));
   }
-  lines.push('', 'via mjs-sweets.com');
+  lines.push('', 'mjs-sweets.com');
   const smsBody = lines.join('\n');
 
   // ---- Send the SMS via SignalWire ----
