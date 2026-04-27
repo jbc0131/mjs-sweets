@@ -17,6 +17,7 @@ const { Formidable } = require('formidable');
 const fs = require('fs');
 const { put } = require('@vercel/blob');
 const { RestClient } = require('@signalwire/compatibility-api');
+const { Resend } = require('resend');
 
 // Limits — generous enough for inspiration photos, tight enough to reject abuse.
 const MAX_PHOTOS = 5;
@@ -31,9 +32,11 @@ async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Quick env sanity check — surface a clear error if Vercel env vars aren't set
-  const required = ['SIGNALWIRE_PROJECT_ID', 'SIGNALWIRE_API_TOKEN', 'SIGNALWIRE_SPACE_URL', 'SIGNALWIRE_FROM_NUMBER', 'NOTIFY_PHONE', 'BLOB_READ_WRITE_TOKEN'];
-  const missing = required.filter(k => !process.env[k]);
+  // Quick env sanity check — surface a clear error if Vercel env vars aren't set.
+  // Email is the critical channel; SMS is optional (best-effort) since SignalWire
+  // is sometimes flaky in trial mode. Photo storage is always required.
+  const requiredAlways = ['BLOB_READ_WRITE_TOKEN', 'RESEND_API_KEY', 'RESEND_FROM_EMAIL', 'NOTIFY_EMAIL'];
+  const missing = requiredAlways.filter(k => !process.env[k]);
   if (missing.length > 0) {
     return res.status(500).json({
       error: 'Server not configured',
@@ -178,30 +181,215 @@ async function handler(req, res) {
   lines.push('', 'mjs-sweets.com');
   const smsBody = lines.join('\n');
 
-  // ---- Send the SMS via SignalWire ----
-  try {
-    const client = RestClient(
-      process.env.SIGNALWIRE_PROJECT_ID,
-      process.env.SIGNALWIRE_API_TOKEN,
-      { signalwireSpaceUrl: process.env.SIGNALWIRE_SPACE_URL }
-    );
-    await client.messages.create({
-      from: process.env.SIGNALWIRE_FROM_NUMBER,
-      to: process.env.NOTIFY_PHONE,
-      body: smsBody,
-    });
-  } catch (err) {
-    console.error('SignalWire send error:', err);
-    // Photos are uploaded but SMS failed — log loudly so we can manually rescue
+  // ---- Send notifications: email (critical) + SMS (best-effort) in parallel ----
+  // Email is the gating channel — far more reliable than SMS, formats cleanly
+  // with photos inline, supports reply-to so Maddie can respond directly.
+  // SMS still goes out as a "buzz alert" when SignalWire/carriers cooperate.
+  const emailPayload = {
+    name,
+    phone,
+    email,
+    occasion: occasionDisplay,
+    dateNeeded: formatDate(dateNeeded),
+    vision,
+    photoUrls,
+  };
+  const emailSubject = `New custom order from ${name} — ${occasionDisplay} (${formatDate(dateNeeded)})`;
+  const emailHtml = buildOrderEmailHtml(emailPayload);
+  const emailText = buildOrderEmailText(emailPayload);
+
+  // NOTIFY_EMAIL accepts a comma-separated list — both Maddie and Jordan can
+  // receive each new order notification by setting e.g.
+  // NOTIFY_EMAIL=maddie@example.com, jordanbcisco@gmail.com
+  const notifyRecipients = process.env.NOTIFY_EMAIL
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const [emailResult, smsResult] = await Promise.allSettled([
+    resend.emails.send({
+      from: `MJ's Sweets <${process.env.RESEND_FROM_EMAIL}>`,
+      to: notifyRecipients,
+      replyTo: email, // hitting Reply responds straight to the customer
+      subject: emailSubject,
+      html: emailHtml,
+      text: emailText,
+    }),
+    sendSignalWireSms(smsBody),
+  ]);
+
+  const emailOk = emailResult.status === 'fulfilled' && !emailResult.value?.error;
+  const smsOk = smsResult.status === 'fulfilled';
+
+  if (!emailOk) {
+    const detail = emailResult.status === 'rejected'
+      ? (emailResult.reason?.message || String(emailResult.reason))
+      : (emailResult.value?.error?.message || 'Unknown email error');
+    console.error('Resend send error:', detail);
     return res.status(502).json({
-      error: "Couldn't send notification. Maddie wasn't reached — please text her directly at (504) 559-6466.",
+      error: "Couldn't send notification. Please text Maddie directly at (504) 559-6466.",
+      detail,
     });
+  }
+
+  if (!smsOk) {
+    // SMS failure is non-fatal — log for diagnostics but the form succeeded
+    // because email landed. Common while SignalWire is in trial / pre-10DLC.
+    console.warn('SignalWire send failed (non-fatal):',
+      smsResult.status === 'rejected' ? smsResult.reason : 'unknown');
   }
 
   return res.status(200).json({
     success: true,
     photoCount: photoUrls.length,
+    emailSent: true,
+    smsSent: smsOk,
   });
+}
+
+// SMS sender wrapped in its own function so Promise.allSettled can capture
+// errors uniformly with the email send.
+async function sendSignalWireSms(smsBody) {
+  if (!process.env.SIGNALWIRE_PROJECT_ID || !process.env.SIGNALWIRE_API_TOKEN
+   || !process.env.SIGNALWIRE_SPACE_URL || !process.env.SIGNALWIRE_FROM_NUMBER
+   || !process.env.NOTIFY_PHONE) {
+    throw new Error('SignalWire env vars not set; skipping SMS');
+  }
+  const client = RestClient(
+    process.env.SIGNALWIRE_PROJECT_ID,
+    process.env.SIGNALWIRE_API_TOKEN,
+    { signalwireSpaceUrl: process.env.SIGNALWIRE_SPACE_URL }
+  );
+  return client.messages.create({
+    from: process.env.SIGNALWIRE_FROM_NUMBER,
+    to: process.env.NOTIFY_PHONE,
+    body: smsBody,
+  });
+}
+
+// ---- Email templates ----
+// Inline-CSS, mobile-friendly HTML matching site brand (pink/cream/yellow).
+// Photos render inline as thumbnails (clickable to full Vercel Blob URLs).
+function buildOrderEmailHtml({ name, phone, email, occasion, dateNeeded, vision, photoUrls }) {
+  const phoneRaw = (phone || '').replace(/\D/g, '');
+  const photoTiles = (photoUrls || []).map(url => `
+    <td style="padding:6px;">
+      <a href="${escapeHtml(url)}" target="_blank" rel="noopener" style="display:inline-block;border-radius:10px;overflow:hidden;">
+        <img src="${escapeHtml(url)}" alt="Inspiration photo" style="display:block;max-width:240px;width:100%;height:auto;border-radius:10px;border:0;" />
+      </a>
+    </td>
+  `).join('');
+
+  const photosBlock = photoUrls && photoUrls.length > 0 ? `
+    <h2 style="margin:32px 0 8px;font-family:Georgia,serif;font-size:18px;font-weight:700;color:#2A1A2E;">
+      Inspiration photos (${photoUrls.length})
+    </h2>
+    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+      <tr>${photoTiles}</tr>
+    </table>
+  ` : '';
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New custom order — MJ's Sweets</title>
+</head>
+<body style="margin:0;padding:0;background:#FFF8F0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#2A1A2E;line-height:1.5;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#FFF8F0;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(42,26,46,0.08);">
+          <tr>
+            <td style="background:linear-gradient(135deg,#FF6B9D,#FF3B7F);padding:24px 32px;color:white;">
+              <div style="font-family:Georgia,serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;opacity:0.85;">MJ's Sweets · mjs-sweets.com</div>
+              <h1 style="margin:6px 0 0;font-family:Georgia,serif;font-size:24px;font-weight:700;">New custom order</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px 32px;">
+              <table cellpadding="8" cellspacing="0" border="0" width="100%">
+                <tr>
+                  <td style="font-weight:600;width:110px;color:#5C4A6B;font-size:14px;vertical-align:top;">From</td>
+                  <td style="font-size:16px;font-weight:600;color:#2A1A2E;">${escapeHtml(name)}</td>
+                </tr>
+                <tr><td colspan="2" style="border-top:1px dashed #F0E2D2;height:1px;line-height:0;font-size:0;">&nbsp;</td></tr>
+                <tr>
+                  <td style="font-weight:600;color:#5C4A6B;font-size:14px;vertical-align:top;">Phone</td>
+                  <td><a href="tel:${escapeHtml(phoneRaw)}" style="color:#FF3B7F;text-decoration:none;font-size:16px;">${escapeHtml(phone)}</a></td>
+                </tr>
+                <tr><td colspan="2" style="border-top:1px dashed #F0E2D2;height:1px;line-height:0;font-size:0;">&nbsp;</td></tr>
+                <tr>
+                  <td style="font-weight:600;color:#5C4A6B;font-size:14px;vertical-align:top;">Email</td>
+                  <td><a href="mailto:${escapeHtml(email)}" style="color:#FF3B7F;text-decoration:none;font-size:16px;">${escapeHtml(email)}</a></td>
+                </tr>
+                <tr><td colspan="2" style="border-top:1px dashed #F0E2D2;height:1px;line-height:0;font-size:0;">&nbsp;</td></tr>
+                <tr>
+                  <td style="font-weight:600;color:#5C4A6B;font-size:14px;vertical-align:top;">Occasion</td>
+                  <td style="font-size:16px;">${escapeHtml(occasion)}</td>
+                </tr>
+                <tr><td colspan="2" style="border-top:1px dashed #F0E2D2;height:1px;line-height:0;font-size:0;">&nbsp;</td></tr>
+                <tr>
+                  <td style="font-weight:600;color:#5C4A6B;font-size:14px;vertical-align:top;">Needed by</td>
+                  <td style="font-size:16px;">${escapeHtml(dateNeeded)}</td>
+                </tr>
+              </table>
+
+              <h2 style="margin:28px 0 8px;font-family:Georgia,serif;font-size:18px;font-weight:700;color:#2A1A2E;">Vision</h2>
+              <div style="background:#FFF8F0;padding:16px 18px;border-radius:10px;border-left:3px solid #FF3B7F;font-size:15px;white-space:pre-wrap;">${escapeHtml(vision)}</div>
+
+              ${photosBlock}
+
+              <p style="margin:32px 0 0;padding-top:20px;border-top:1px dashed #F0E2D2;color:#5C4A6B;font-size:14px;">
+                💡 <strong>Reply to this email</strong> to respond directly to ${escapeHtml(name)}.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#FFF8F0;padding:16px 32px;text-align:center;color:#5C4A6B;font-size:12px;">
+              MJ's Sweets · Madisonville, LA · <a href="https://www.mjs-sweets.com" style="color:#FF3B7F;text-decoration:none;">mjs-sweets.com</a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+function buildOrderEmailText({ name, phone, email, occasion, dateNeeded, vision, photoUrls }) {
+  const lines = [
+    'NEW CUSTOM ORDER',
+    '================',
+    '',
+    `From:      ${name}`,
+    `Phone:     ${phone}`,
+    `Email:     ${email}`,
+    `Occasion:  ${occasion}`,
+    `Needed by: ${dateNeeded}`,
+    '',
+    'Vision:',
+    vision,
+  ];
+  if (photoUrls && photoUrls.length > 0) {
+    lines.push('', `Inspiration photos (${photoUrls.length}):`);
+    photoUrls.forEach(url => lines.push(`  ${url}`));
+  }
+  lines.push('', 'Reply to this email to respond directly to the customer.', '', "— MJ's Sweets · mjs-sweets.com");
+  return lines.join('\n');
+}
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // Disable Vercel's automatic body parser — formidable handles multipart itself.
