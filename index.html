@@ -767,6 +767,178 @@
  font-size: 0.85rem;
  }
 
+ /* ---------- PORTFOLIO GALLERY (in dark Custom Orders section) ---------- */
+ .portfolio {
+ margin: 4rem auto 5rem;
+ max-width: 1100px;
+ }
+ .portfolio-header {
+ text-align: center;
+ margin-bottom: 1.75rem;
+ }
+ .portfolio-title {
+ font-family: 'Fraunces', serif;
+ font-size: 1.7rem;
+ font-weight: 700;
+ margin-bottom: 0.4rem;
+ color: var(--cream);
+ }
+ .portfolio-title em {
+ font-style: italic;
+ color: var(--yellow);
+ font-weight: 400;
+ }
+ .portfolio-sub {
+ color: rgba(255, 248, 240, 0.7);
+ font-size: 0.95rem;
+ margin: 0 auto;
+ max-width: 540px;
+ }
+
+ .portfolio-filters {
+ display: flex;
+ flex-wrap: wrap;
+ justify-content: center;
+ gap: 0.5rem;
+ margin-bottom: 1.5rem;
+ }
+ .portfolio-filter {
+ background: transparent;
+ color: var(--cream);
+ border: 1px solid rgba(255, 248, 240, 0.25);
+ padding: 0.5rem 1rem;
+ border-radius: 999px;
+ font-family: 'DM Sans', sans-serif;
+ font-weight: 600;
+ font-size: 0.85rem;
+ cursor: pointer;
+ transition: all 0.2s;
+ white-space: nowrap;
+ }
+ .portfolio-filter:hover {
+ border-color: var(--yellow);
+ color: var(--yellow);
+ }
+ .portfolio-filter.active {
+ background: var(--yellow);
+ color: var(--ink);
+ border-color: var(--yellow);
+ }
+ .portfolio-filter-count {
+ opacity: 0.6;
+ font-weight: 400;
+ margin-left: 0.4rem;
+ font-size: 0.78rem;
+ }
+ .portfolio-filter.active .portfolio-filter-count { opacity: 0.7; }
+
+ /* CSS columns give a clean masonry layout that handles photos of any aspect ratio */
+ .portfolio-grid {
+ column-count: 3;
+ column-gap: 1rem;
+ }
+ .portfolio-tile {
+ display: block;
+ width: 100%;
+ margin: 0 0 1rem 0;
+ border-radius: 16px;
+ overflow: hidden;
+ cursor: pointer;
+ border: none;
+ background: rgba(255, 248, 240, 0.04);
+ padding: 0;
+ break-inside: avoid;
+ transition: transform 0.25s, box-shadow 0.25s;
+ }
+ .portfolio-tile:hover {
+ transform: translateY(-3px);
+ box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+ }
+ .portfolio-tile img {
+ width: 100%;
+ height: auto;
+ display: block;
+ }
+
+ @media (max-width: 900px) {
+ .portfolio-grid { column-count: 2; column-gap: 0.75rem; }
+ .portfolio-tile { margin-bottom: 0.75rem; }
+ }
+ @media (max-width: 480px) {
+ .portfolio-grid { column-count: 1; }
+ }
+
+ /* ---------- LIGHTBOX ---------- */
+ .lightbox {
+ position: fixed;
+ inset: 0;
+ background: rgba(0, 0, 0, 0.94);
+ z-index: 300;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ padding: 2rem;
+ cursor: zoom-out;
+ }
+ .lightbox[hidden] { display: none; }
+ .lightbox-content {
+ max-width: 100%;
+ max-height: 100%;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ gap: 1rem;
+ cursor: default;
+ }
+ .lightbox-img {
+ max-width: 100%;
+ max-height: calc(100vh - 7rem);
+ object-fit: contain;
+ border-radius: 8px;
+ box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+ }
+ .lightbox-caption {
+ color: rgba(255, 255, 255, 0.85);
+ font-family: 'DM Sans', sans-serif;
+ font-size: 0.9rem;
+ text-align: center;
+ max-width: 800px;
+ padding: 0 1rem;
+ }
+ .lightbox-close,
+ .lightbox-prev,
+ .lightbox-next {
+ position: absolute;
+ background: rgba(255, 255, 255, 0.12);
+ color: white;
+ border: none;
+ width: 48px;
+ height: 48px;
+ border-radius: 50%;
+ cursor: pointer;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ transition: background 0.2s;
+ z-index: 1;
+ backdrop-filter: blur(4px);
+ }
+ .lightbox-close { top: 1.5rem; right: 1.5rem; font-size: 1.3rem; }
+ .lightbox-prev { left: 1.5rem; top: 50%; transform: translateY(-50%); font-size: 2rem; }
+ .lightbox-next { right: 1.5rem; top: 50%; transform: translateY(-50%); font-size: 2rem; }
+ .lightbox-close:hover,
+ .lightbox-prev:hover,
+ .lightbox-next:hover {
+ background: rgba(255, 255, 255, 0.28);
+ }
+ @media (max-width: 600px) {
+ .lightbox { padding: 1rem; }
+ .lightbox-prev, .lightbox-next { width: 40px; height: 40px; font-size: 1.6rem; }
+ .lightbox-close { width: 40px; height: 40px; top: 1rem; right: 1rem; font-size: 1.1rem; }
+ .lightbox-prev { left: 0.5rem; }
+ .lightbox-next { right: 0.5rem; }
+ }
+
  .request-box {
  background: var(--cream);
  color: var(--ink);
@@ -1917,6 +2089,16 @@
  </div>
  </div>
 
+ <!-- PORTFOLIO GALLERY -->
+ <div class="portfolio">
+ <div class="portfolio-header">
+ <h3 class="portfolio-title">A peek at past <em>custom orders</em></h3>
+ <p class="portfolio-sub">Real cookies for real moments. Tap any photo to see it bigger. Want something similar? Tell me your vision below.</p>
+ </div>
+ <div class="portfolio-filters" id="portfolioFilters" role="tablist" aria-label="Filter portfolio by category"></div>
+ <div class="portfolio-grid" id="portfolioGrid"></div>
+ </div>
+
  <div class="request-box">
  <div class="request-pitch">
  <h3>Two ways to chat about your order.</h3>
@@ -2244,6 +2426,17 @@
  <button class="btn btn-secondary" onclick="closeCheckoutModal()">Close</button>
  </div>
  </div>
+ </div>
+</div>
+
+<!-- LIGHTBOX (portfolio photo viewer) -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer" hidden onclick="closeLightbox()">
+ <button class="lightbox-close" onclick="event.stopPropagation(); closeLightbox()" aria-label="Close photo viewer">✕</button>
+ <button class="lightbox-prev" onclick="event.stopPropagation(); lightboxNav(-1)" aria-label="Previous photo">‹</button>
+ <button class="lightbox-next" onclick="event.stopPropagation(); lightboxNav(1)" aria-label="Next photo">›</button>
+ <div class="lightbox-content" onclick="event.stopPropagation()">
+ <img class="lightbox-img" id="lightboxImg" alt="" />
+ <div class="lightbox-caption" id="lightboxCaption"></div>
  </div>
 </div>
 
@@ -3207,6 +3400,178 @@
  const footerYearEl = document.getElementById('footerYear');
  if (footerYearEl) footerYearEl.textContent = String(new Date().getFullYear());
 
+ // ---------- PORTFOLIO GALLERY ----------
+ // Real cookie photos shown in the Custom Orders section, with category filter
+ // and lightbox viewer. To add new photos: process to /portfolio/[category]/...,
+ // append to PORTFOLIO array. To add a new category: add to PORTFOLIO_CATEGORIES.
+ const PORTFOLIO_CATEGORIES = {
+   'wedding':     { label: 'Wedding & Bridal',  emoji: '💍' },
+   'baby-shower': { label: 'Baby Shower',       emoji: '👶' },
+   'faith':       { label: 'Faith & Milestones', emoji: '⛪' },
+   'graduation':  { label: 'Graduation',         emoji: '🎓' },
+ };
+
+ const PORTFOLIO = [
+   // Wedding & Bridal
+   { src: '/portfolio/wedding/wedding-cookies-gold-monogram.jpg',
+     alt: 'Custom hand-decorated wedding cookies in white and gold with monogram, diamond ring, and Mr. & Mrs. designs',
+     category: 'wedding', caption: 'Wedding day · gold on white' },
+   { src: '/portfolio/wedding/engagement-cookies-blue-and-gold.jpg',
+     alt: 'Custom engagement cookies in dusty blue and gold featuring champagne flutes, dress, and floral ring',
+     category: 'wedding', caption: 'Engagement · dusty blue & gold' },
+   { src: '/portfolio/wedding/bridal-cookies-modern-black-purple.jpg',
+     alt: 'Modern alternative bridal shower cookies in black and lavender with til death do us part theme',
+     category: 'wedding', caption: 'Alt bridal · "til death do us part"' },
+   { src: '/portfolio/wedding/bridal-shower-cookies-pastel-blue-green.jpg',
+     alt: 'Pastel bridal shower cookies in soft blue and green with floral monogram and dress designs',
+     category: 'wedding', caption: 'Bridal shower · pastel florals' },
+   { src: '/portfolio/wedding/bride-to-be-cookies-pink-rose.jpg',
+     alt: 'Pink and rose bride-to-be cookies with future Mrs monogram, ring, and elegant dress',
+     category: 'wedding', caption: 'Bride-to-be · pink & rose' },
+   { src: '/portfolio/wedding/engagement-cookies-emerald-and-gold.jpg',
+     alt: 'Emerald green and gold engagement cookies with botanical accents and ring designs',
+     category: 'wedding', caption: 'Engagement · emerald & gold' },
+   // Baby Shower & Gender Reveal
+   { src: '/portfolio/baby-shower/baby-shower-cookies-mickey-pink-gold.jpg',
+     alt: 'Pink and gold Mickey Mouse themed baby shower cookies with bottle, bow, and personalized onesie',
+     category: 'baby-shower', caption: 'Mickey · pink & gold' },
+   { src: '/portfolio/baby-shower/baby-shower-cookies-here-comes-the-sun.jpg',
+     alt: 'Yellow and orange Here Comes the Sun baby shower cookies with sun, clouds, and personalized onesies',
+     category: 'baby-shower', caption: '"Here comes the sun"' },
+   { src: '/portfolio/baby-shower/baby-shower-cookies-mickey-blue-oh-boy.jpg',
+     alt: 'Blue Mickey Mouse Oh Boy baby shower cookies with onesie, footprints, and chocolate-dipped pretzel rods',
+     category: 'baby-shower', caption: '"Oh boy" · Mickey blue' },
+   { src: '/portfolio/baby-shower/baby-shower-cookies-elephant-lavender.jpg',
+     alt: 'Lavender elephant baby shower cookies with rice krispies treats and cake pops',
+     category: 'baby-shower', caption: 'Elephant · lavender' },
+   { src: '/portfolio/baby-shower/baby-shower-cookies-twins-sweet-peas.jpg',
+     alt: 'Sweet peas twins baby shower cookies in sage green and pink with two peas in a pod theme',
+     category: 'baby-shower', caption: 'Twins · sweet peas' },
+   { src: '/portfolio/baby-shower/baby-shower-cookies-winnie-the-pooh.jpg',
+     alt: 'Winnie the Pooh themed baby shower cookies with bee, honeypot, and beehive designs',
+     category: 'baby-shower', caption: 'Winnie the Pooh' },
+   { src: '/portfolio/baby-shower/baby-shower-cookies-nautical-its-a-boy.jpg',
+     alt: 'Nautical baby shower cookies in blue and red with anchor, ship wheel, life preserver, and sailor onesie',
+     category: 'baby-shower', caption: 'Nautical · "It\'s a boy!"' },
+   { src: '/portfolio/baby-shower/gender-reveal-cookies-pink-teal-oh-baby.jpg',
+     alt: 'Pink and teal gender reveal cookies with question mark onesies and Oh Baby script',
+     category: 'baby-shower', caption: 'Gender reveal · pink or teal' },
+   // Faith & Milestones
+   { src: '/portfolio/faith/baptism-cookies-white-gold-cross-dove.jpg',
+     alt: 'White and gold baptism cookies with crosses, dove, angel, and personalized God Bless name designs',
+     category: 'faith', caption: 'Baptism · twins, white & gold' },
+   { src: '/portfolio/faith/baptism-cookies-blue-made-new-bible-verse.jpg',
+     alt: 'Blue and gold baptism cookies featuring Made New 2 Cor 5:17 verse with cross, dove, and angel',
+     category: 'faith', caption: 'Baptism · "Made New" 2 Cor 5:17' },
+   { src: '/portfolio/faith/bible-study-cookies-take-what-you-need-crosses.jpg',
+     alt: 'Pastel watercolor Bible study cookies with crosses inscribed prayer, faith, grace, courage, love, patience, guidance, strength',
+     category: 'faith', caption: 'Bible study · "Take What You Need"' },
+   { src: '/portfolio/faith/first-communion-cookies-white-gold-floral.jpg',
+     alt: 'White and gold first communion cookies with floral cross, dress, and Isabella personalization',
+     category: 'faith', caption: 'First Communion · floral & gold' },
+   // Graduation
+   { src: '/portfolio/graduation/graduation-cookies-star-wars-themed.jpg',
+     alt: 'Star Wars themed graduation cookies with cap, gown, lightsabers, Yoda, Vader, and Stormtrooper',
+     category: 'graduation', caption: 'Star Wars graduation' },
+   { src: '/portfolio/graduation/graduation-cookies-royal-blue-yellow.jpg',
+     alt: 'Royal blue and yellow graduation cookies with cap, gown, diploma, and personalized monogram letters',
+     category: 'graduation', caption: 'School colors · blue & yellow' },
+   { src: '/portfolio/graduation/graduation-cookies-class-of-2031-paws.jpg',
+     alt: 'Blue and gold Class of 2031 graduation cookies with paw print mascot and Congrats Nate and Laney',
+     category: 'graduation', caption: 'Class of 2031 · paw print pride' },
+   { src: '/portfolio/graduation/graduation-cookies-maroon-personalized.jpg',
+     alt: 'Maroon and pink personalized graduation cookies with hearts, cap, gown, and I\'ll Always Love You Papa note',
+     category: 'graduation', caption: 'Personalized note · maroon & pink' },
+ ];
+
+ let portfolioActiveFilter = 'all';
+ let lightboxIndex = 0;
+ let lightboxFiltered = [];
+
+ function escapeAttr(s) {
+   return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+ }
+
+ function renderPortfolioFilters() {
+   const counts = {};
+   PORTFOLIO.forEach(p => { counts[p.category] = (counts[p.category] || 0) + 1; });
+   const total = PORTFOLIO.length;
+   const cats = Object.keys(PORTFOLIO_CATEGORIES);
+
+   const buttons = [
+     { key: 'all', label: 'All', emoji: '✨', count: total },
+     ...cats.filter(c => counts[c] > 0).map(c => ({
+       key: c,
+       label: PORTFOLIO_CATEGORIES[c].label,
+       emoji: PORTFOLIO_CATEGORIES[c].emoji,
+       count: counts[c]
+     }))
+   ];
+
+   document.getElementById('portfolioFilters').innerHTML = buttons.map(b => `
+     <button
+       class="portfolio-filter ${portfolioActiveFilter === b.key ? 'active' : ''}"
+       role="tab"
+       aria-selected="${portfolioActiveFilter === b.key}"
+       onclick="setPortfolioFilter('${b.key}')"
+     >${b.emoji} ${b.label}<span class="portfolio-filter-count">${b.count}</span></button>
+   `).join('');
+ }
+
+ function renderPortfolioGrid() {
+   const filtered = portfolioActiveFilter === 'all'
+     ? PORTFOLIO
+     : PORTFOLIO.filter(p => p.category === portfolioActiveFilter);
+
+   document.getElementById('portfolioGrid').innerHTML = filtered.map((p, i) => `
+     <button class="portfolio-tile" onclick="openLightbox(${i})" aria-label="View larger: ${escapeAttr(p.caption)}">
+       <img src="${p.src}" alt="${escapeAttr(p.alt)}" loading="lazy" />
+     </button>
+   `).join('');
+ }
+
+ function setPortfolioFilter(cat) {
+   portfolioActiveFilter = cat;
+   renderPortfolioFilters();
+   renderPortfolioGrid();
+ }
+
+ function openLightbox(filteredIdx) {
+   // Build the navigation set from whatever's currently filtered, so prev/next
+   // moves through the visible photos rather than jumping into hidden categories.
+   lightboxFiltered = portfolioActiveFilter === 'all'
+     ? PORTFOLIO
+     : PORTFOLIO.filter(p => p.category === portfolioActiveFilter);
+   lightboxIndex = filteredIdx;
+   showLightboxPhoto();
+   const lb = document.getElementById('lightbox');
+   lb.hidden = false;
+   document.body.style.overflow = 'hidden';
+ }
+
+ function showLightboxPhoto() {
+   const photo = lightboxFiltered[lightboxIndex];
+   if (!photo) return;
+   document.getElementById('lightboxImg').src = photo.src;
+   document.getElementById('lightboxImg').alt = photo.alt;
+   document.getElementById('lightboxCaption').textContent = photo.caption;
+ }
+
+ function lightboxNav(dir) {
+   if (lightboxFiltered.length === 0) return;
+   lightboxIndex = (lightboxIndex + dir + lightboxFiltered.length) % lightboxFiltered.length;
+   showLightboxPhoto();
+ }
+
+ function closeLightbox() {
+   document.getElementById('lightbox').hidden = true;
+   document.body.style.overflow = '';
+ }
+
+ // Initial render
+ renderPortfolioFilters();
+ renderPortfolioGrid();
+
  // Mobile nav toggle
  function toggleNav() {
    const links = document.getElementById('navLinks');
@@ -3245,8 +3610,18 @@
  const checkoutPhoneEl = document.getElementById('checkoutPhone');
  if (checkoutPhoneEl) checkoutPhoneEl.addEventListener('input', formatPhoneInput);
 
- // Esc closes any open overlay (cart, flavor picker, checkout, mobile menu)
+ // Keyboard: Esc closes any open overlay; arrow keys navigate the lightbox.
  document.addEventListener('keydown', (e) => {
+   const lightbox = document.getElementById('lightbox');
+   const lightboxOpen = lightbox && !lightbox.hidden;
+
+   // Lightbox-specific keys take precedence when it's open
+   if (lightboxOpen) {
+     if (e.key === 'Escape') { closeLightbox(); return; }
+     if (e.key === 'ArrowLeft') { lightboxNav(-1); return; }
+     if (e.key === 'ArrowRight') { lightboxNav(1); return; }
+   }
+
    if (e.key !== 'Escape') return;
    if (document.getElementById('checkoutModal').classList.contains('open')) closeCheckoutModal();
    else if (document.getElementById('cartDrawer').classList.contains('open')) closeCart();
