@@ -1,0 +1,19 @@
+# MJ's Sweets — robots.txt
+# Allow all customer-facing pages and product photos to be indexed.
+# Block API endpoints (return JSON, not useful in search) and future
+# admin / order-tracking pages (privacy: order URLs are personal links).
+
+User-agent: *
+Allow: /
+
+# Backend API endpoints — never index
+Disallow: /api/
+
+# Future admin pages (password-protected anyway)
+Disallow: /admin/
+
+# Customer order tracking pages — auth-gated and personal
+Disallow: /order/
+
+# Where the sitemap lives — helps Google discover and re-crawl pages quickly
+Sitemap: https://www.mjs-sweets.com/sitemap.xml
