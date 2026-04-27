@@ -16,13 +16,6 @@ const fs = require('fs');
 const { put } = require('@vercel/blob');
 const { RestClient } = require('@signalwire/compatibility-api');
 
-// Disable Vercel's automatic body parser — formidable handles multipart itself.
-module.exports.config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
 // Limits — generous enough for inspiration photos, tight enough to reject abuse.
 const MAX_PHOTOS = 5;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB per photo
@@ -31,7 +24,7 @@ const ALLOWED_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'i
 
 const TEXT_FIELD_LIMIT = 2000;
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -51,7 +44,12 @@ module.exports = async function handler(req, res) {
     ({ fields, files } = await parseMultipart(req));
   } catch (err) {
     console.error('Multipart parse error:', err);
-    return res.status(400).json({ error: 'Could not read your form. Try again.' });
+    // Surface the actual error so we can debug from the form's red banner
+    // instead of having to dig through Vercel logs every time.
+    return res.status(400).json({
+      error: 'Could not read your form. Try again.',
+      detail: err.message || String(err),
+    });
   }
 
   // ---- Validate text fields ----
@@ -166,7 +164,18 @@ module.exports = async function handler(req, res) {
     success: true,
     photoCount: photoUrls.length,
   });
+}
+
+// Disable Vercel's automatic body parser — formidable handles multipart itself.
+// IMPORTANT: this MUST be set AFTER `handler` is defined so module.exports
+// holds both the function and the config attached to it. If you ever change
+// the export style, make sure the function and its `.config` end up on the
+// same module.exports object.
+handler.config = {
+  api: { bodyParser: false },
 };
+
+module.exports = handler;
 
 // ---------- Helpers ----------
 
