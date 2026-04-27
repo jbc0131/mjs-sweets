@@ -11,7 +11,9 @@
 // Expected request: multipart/form-data with fields:
 //   name, contact, occasion, date_needed, vision, inspiration_photos[]
 
-const formidable = require('formidable');
+// In formidable v3, CommonJS require returns a module object (not the
+// constructor directly). Pull out the Formidable class explicitly.
+const { Formidable } = require('formidable');
 const fs = require('fs');
 const { put } = require('@vercel/blob');
 const { RestClient } = require('@signalwire/compatibility-api');
@@ -181,7 +183,7 @@ module.exports = handler;
 
 function parseMultipart(req) {
   return new Promise((resolve, reject) => {
-    const form = formidable({
+    const form = new Formidable({
       multiples: true,
       maxFileSize: MAX_PHOTO_BYTES,
       maxTotalFileSize: MAX_TOTAL_BYTES,
