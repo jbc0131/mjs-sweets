@@ -7,6 +7,26 @@
 <meta name="supported-color-schemes" content="light" />
 <meta name="theme-color" content="#FFF8F0" />
 <title>MJ's Sweets, From Scratch With Love</title>
+<meta name="description" content="Hand-decorated sugar cookies, marshmallow rice krispy treats, and custom edible art — made from scratch in Madisonville, LA. Serving the Northshore: Mandeville, Covington, Hammond, Folsom, Abita Springs, Ponchatoula, and beyond." />
+<meta name="author" content="MJ's Sweets" />
+<link rel="canonical" href="https://www.mjs-sweets.com/" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+<!-- Open Graph (Facebook, iMessage, Slack previews) -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="MJ's Sweets" />
+<meta property="og:title" content="MJ's Sweets — From Scratch With Love" />
+<meta property="og:description" content="Hand-decorated sugar cookies and custom edible art, made from scratch in Madisonville, LA. Serving the Northshore." />
+<meta property="og:image" content="https://www.mjs-sweets.com/mjs_sweets_logo_louisiana.JPG" />
+<meta property="og:url" content="https://www.mjs-sweets.com/" />
+<meta property="og:locale" content="en_US" />
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="MJ's Sweets — From Scratch With Love" />
+<meta name="twitter:description" content="Hand-decorated sugar cookies and custom edible art, made from scratch in Madisonville, LA." />
+<meta name="twitter:image" content="https://www.mjs-sweets.com/mjs_sweets_logo_louisiana.JPG" />
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,400&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
@@ -1766,7 +1786,7 @@
  <div class="section-inner">
  <div class="section-header">
  <div class="section-eyebrow">~ what's in season ~</div>
- <h1 class="section-title">Order our <em>seasonal</em> sets</h1>
+ <h2 class="section-title">Order our <em>seasonal</em> sets</h2>
  <p class="section-sub">Pre-decorated, packaged, and ready to grab. Don't forget to add cake pops to round out your order!</p>
  </div>
  <div class="product-grid" id="productGrid">
@@ -1800,7 +1820,7 @@
  <div class="section-inner">
  <div class="section-header">
  <div class="section-eyebrow">~ made just for you ~</div>
- <h1 class="section-title">Dreaming up something <em>special?</em></h1>
+ <h2 class="section-title">Dreaming up something <em>special?</em></h2>
  <p class="section-sub">From baby showers to graduations to that one team mascot only your kid would recognize, let's make it.</p>
  </div>
 
@@ -1841,23 +1861,23 @@
  <div class="request-pitch">
  <h3>Two ways to chat about your order.</h3>
  <p>Fill out the form for non-urgent requests, or text me directly if you've got a tight timeline. I usually reply within a few hours during the day.</p>
- <a href="sms:+15045551234" class="btn btn-primary">📱 Text Maddie Directly</a>
+ <a href="sms:+15045596466" class="btn btn-primary">📱 Text Maddie · (504) 559-6466</a>
  </div>
- <form onsubmit="handleRequest(event)">
+ <form id="customRequestForm" onsubmit="handleRequest(event)">
  <div class="form-row">
  <div>
- <label>Your name</label>
- <input type="text" required placeholder="Jane Doe">
+ <label for="reqName">Your name</label>
+ <input type="text" id="reqName" name="name" required autocomplete="name" placeholder="Jane Doe">
  </div>
  <div>
- <label>Phone or email</label>
- <input type="text" required placeholder="best way to reach you">
+ <label for="reqContact">Phone or email</label>
+ <input type="text" id="reqContact" name="contact" required placeholder="best way to reach you">
  </div>
  </div>
  <div class="form-row">
  <div>
- <label>Occasion</label>
- <select required>
+ <label for="reqOccasion">Occasion</label>
+ <select id="reqOccasion" name="occasion" required>
  <option value="">Choose one...</option>
  <option>Birthday</option>
  <option>Wedding / Bridal</option>
@@ -1869,13 +1889,13 @@
  </select>
  </div>
  <div>
- <label>Date needed by</label>
- <input type="date" required>
+ <label for="reqDate">Date needed by</label>
+ <input type="date" id="reqDate" name="date_needed" required>
  </div>
  </div>
  <div>
- <label>Tell me your vision</label>
- <textarea placeholder="Colors, theme, quantity, inspiration photos welcome via text..." required></textarea>
+ <label for="reqVision">Tell me your vision</label>
+ <textarea id="reqVision" name="vision" placeholder="Colors, theme, quantity, inspiration photos welcome via text..." required></textarea>
  </div>
  <button type="submit" class="btn btn-primary" style="justify-content: center;">Send Request →</button>
  </form>
@@ -1901,7 +1921,7 @@
  <div class="section-inner">
  <div class="section-header">
  <div class="section-eyebrow">~ what folks are saying ~</div>
- <h1 class="section-title">100% recommend, every <em>single</em> time.</h1>
+ <h2 class="section-title">100% recommend, every <em>single</em> time.</h2>
  <p class="section-sub">10 reviews on Facebook, every one of them five stars.</p>
  </div>
  <div class="reviews-grid">
@@ -1932,7 +1952,7 @@
  <div class="section-inner">
  <div class="section-header">
  <div class="section-eyebrow">~ good things to know ~</div>
- <h1 class="section-title">Sweet little <em>questions</em>, answered.</h1>
+ <h2 class="section-title">Sweet little <em>questions</em>, answered.</h2>
  <p class="section-sub">Everything you might be wondering before you order. Got something else? Just text!</p>
  </div>
  <div class="faq-list">
@@ -2006,9 +2026,8 @@
  <div class="footer-logo">MJ's <span>Sweets</span></div>
  <p class="footer-tagline">From scratch with love, handmade cookies and treats for life's sweetest moments.</p>
  <div class="social-links">
- <a href="#" class="social-link">f</a>
- <a href="#" class="social-link">📷</a>
- <a href="sms:+15045551234" class="social-link">💬</a>
+ <a href="https://www.facebook.com/mjssweets25" class="social-link" target="_blank" rel="noopener" aria-label="Follow MJ's Sweets on Facebook">f</a>
+ <a href="sms:+15045596466" class="social-link" aria-label="Text Maddie at 504-559-6466">💬</a>
  </div>
  </div>
  <div class="footer-col">
@@ -2016,29 +2035,28 @@
  <ul>
  <li><a href="#shop">Seasonal Sets</a></li>
  <li><a href="#custom">Custom Orders</a></li>
- <li><a href="#">Gift Cards</a></li>
  </ul>
  </div>
  <div class="footer-col">
- <h4>Service Area</h4>
+ <h4>Serving</h4>
  <ul>
- <li><a href="#">Madisonville</a></li>
- <li><a href="#">Mandeville</a></li>
- <li><a href="#">Covington</a></li>
- <li><a href="#">Hammond</a></li>
+ <li>Madisonville</li>
+ <li>Mandeville</li>
+ <li>Covington</li>
+ <li>Hammond &amp; beyond</li>
  </ul>
  </div>
  <div class="footer-col">
  <h4>Contact</h4>
  <ul>
- <li><a href="sms:+15045551234">Text Maddie</a></li>
+ <li><a href="sms:+15045596466">Text (504) 559-6466</a></li>
  <li><a href="#custom">Order Form</a></li>
- <li><a href="#">FAQ</a></li>
+ <li><a href="#faq">FAQ</a></li>
  </ul>
  </div>
  </div>
  <div class="footer-bottom">
- © 2026 MJ's Sweets · Made with love in Madisonville, Louisiana
+ © <span id="footerYear">2026</span> MJ's Sweets · Made with love in Madisonville, Louisiana
  </div>
 </footer>
 
@@ -3049,6 +3067,10 @@
  e.target.reset();
  }
 
+ // Stamp current year in the footer so it never goes stale
+ const footerYearEl = document.getElementById('footerYear');
+ if (footerYearEl) footerYearEl.textContent = String(new Date().getFullYear());
+
  // Mobile nav toggle
  function toggleNav() {
    const links = document.getElementById('navLinks');
@@ -3148,5 +3170,43 @@
  setupHeroHeadline();
 </script>
 
+<!-- Structured data for local search (Google, Bing). Helps the bakery
+ show up in "cookies near me" and Northshore-area queries with rich
+ details (phone, hours, service area). -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Bakery",
+  "name": "MJ's Sweets",
+  "alternateName": "MJ's Sweets — From Scratch With Love",
+  "description": "Hand-decorated sugar cookies, marshmallow rice krispy treats, and custom edible art for every celebration. Made from scratch in Madisonville, Louisiana, serving the entire Northshore.",
+  "url": "https://www.mjs-sweets.com/",
+  "telephone": "+1-504-559-6466",
+  "image": "https://www.mjs-sweets.com/mjs_sweets_logo_louisiana.JPG",
+  "logo": "https://www.mjs-sweets.com/mjs_sweets_logo_louisiana.JPG",
+  "priceRange": "$",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Madisonville",
+    "addressRegion": "LA",
+    "postalCode": "70447",
+    "addressCountry": "US"
+  },
+  "areaServed": [
+    { "@type": "City", "name": "Madisonville" },
+    { "@type": "City", "name": "Mandeville" },
+    { "@type": "City", "name": "Covington" },
+    { "@type": "City", "name": "Hammond" },
+    { "@type": "City", "name": "Folsom" },
+    { "@type": "City", "name": "Abita Springs" },
+    { "@type": "City", "name": "Ponchatoula" }
+  ],
+  "servesCuisine": "Bakery",
+  "paymentAccepted": "Credit Card, Debit Card, Apple Pay, Google Pay",
+  "sameAs": [
+    "https://www.facebook.com/mjssweets25"
+  ]
+}
+</script>
 </body>
 </html>
