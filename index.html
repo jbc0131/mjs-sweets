@@ -3909,6 +3909,7 @@
 {
   "@context": "https://schema.org",
   "@type": "Bakery",
+  "@id": "https://www.mjs-sweets.com/#bakery",
   "name": "MJ's Sweets",
   "alternateName": "MJ's Sweets — From Scratch With Love",
   "description": "Hand-decorated sugar cookies, marshmallow rice krispy treats, and custom edible art for every celebration. Made from scratch in Madisonville, Louisiana, serving the entire Northshore.",
@@ -3996,6 +3997,7 @@
         "name": "Cake Pops",
         "description": "Hand-decorated cake pops on a stick — made from scratch and dressed up. Choose your flavor: Chocolate, Vanilla, Funfetti, Red Velvet, Lemon, or Strawberry. Sold by the dozen.",
         "image": "https://www.mjs-sweets.com/cake_pops.png",
+        "url": "https://www.mjs-sweets.com/#shop",
         "brand": { "@type": "Brand", "name": "MJ's Sweets" },
         "category": "Dessert",
         "offers": {
@@ -4004,7 +4006,12 @@
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
           "url": "https://www.mjs-sweets.com/#shop",
-          "seller": { "@type": "LocalBusiness", "name": "MJ's Sweets" }
+          "seller": { "@id": "https://www.mjs-sweets.com/#bakery" },
+          "hasMerchantReturnPolicy": {
+            "@type": "MerchantReturnPolicy",
+            "applicableCountry": "US",
+            "returnPolicyCategory": "https://schema.org/MerchantReturnNotPermitted"
+          }
         }
       }
     },
@@ -4016,6 +4023,7 @@
         "name": "Rice Krispies Treats",
         "description": "Marshmallow-y rice krispy treats, drizzled with chocolate and dressed up. Made fresh from scratch. Sold by the dozen.",
         "image": "https://www.mjs-sweets.com/rice_krispies.png",
+        "url": "https://www.mjs-sweets.com/#shop",
         "brand": { "@type": "Brand", "name": "MJ's Sweets" },
         "category": "Dessert",
         "offers": {
@@ -4024,7 +4032,12 @@
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
           "url": "https://www.mjs-sweets.com/#shop",
-          "seller": { "@type": "LocalBusiness", "name": "MJ's Sweets" }
+          "seller": { "@id": "https://www.mjs-sweets.com/#bakery" },
+          "hasMerchantReturnPolicy": {
+            "@type": "MerchantReturnPolicy",
+            "applicableCountry": "US",
+            "returnPolicyCategory": "https://schema.org/MerchantReturnNotPermitted"
+          }
         }
       }
     },
@@ -4036,6 +4049,7 @@
         "name": "Dipped Pretzel Rods",
         "description": "Sweet & salty crunch — pretzel rods dipped in chocolate and decorated. Sold by the dozen.",
         "image": "https://www.mjs-sweets.com/pretzel_rods.png",
+        "url": "https://www.mjs-sweets.com/#shop",
         "brand": { "@type": "Brand", "name": "MJ's Sweets" },
         "category": "Dessert",
         "offers": {
@@ -4044,7 +4058,12 @@
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
           "url": "https://www.mjs-sweets.com/#shop",
-          "seller": { "@type": "LocalBusiness", "name": "MJ's Sweets" }
+          "seller": { "@id": "https://www.mjs-sweets.com/#bakery" },
+          "hasMerchantReturnPolicy": {
+            "@type": "MerchantReturnPolicy",
+            "applicableCountry": "US",
+            "returnPolicyCategory": "https://schema.org/MerchantReturnNotPermitted"
+          }
         }
       }
     }
