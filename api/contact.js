@@ -110,8 +110,10 @@ async function handler(req, res) {
       photoFiles.map(async (f, idx) => {
         const safeName = (f.originalFilename || `photo-${idx + 1}`).replace(/[^a-z0-9._-]/gi, '_');
         const key = `inspiration/${Date.now()}-${idx}-${safeName}`;
-        const stream = fs.createReadStream(f.filepath);
-        const blob = await put(key, stream, {
+        // Read into a Buffer first — @vercel/blob v2 doesn't always
+        // accept Node fs ReadStreams; Buffer is the most reliable input.
+        const buffer = await fs.promises.readFile(f.filepath);
+        const blob = await put(key, buffer, {
           access: 'public',
           contentType: f.mimetype,
           token: process.env.BLOB_READ_WRITE_TOKEN,
@@ -121,7 +123,10 @@ async function handler(req, res) {
     );
   } catch (err) {
     console.error('Blob upload error:', err);
-    return res.status(500).json({ error: 'Could not upload photos. Try again or text them directly.' });
+    return res.status(500).json({
+      error: 'Could not upload photos. Try again or text them directly.',
+      detail: err.message || String(err),
+    });
   }
 
   // ---- Build SMS body ----
@@ -188,6 +193,11 @@ function parseMultipart(req) {
       maxFileSize: MAX_PHOTO_BYTES,
       maxTotalFileSize: MAX_TOTAL_BYTES,
       keepExtensions: true,
+      // Browsers send empty file inputs even when no file is selected. Without
+      // this, formidable rejects the whole submission as "file size should be
+      // greater than 0". We filter empties ourselves below.
+      allowEmptyFiles: true,
+      minFileSize: 0,
     });
     form.parse(req, (err, fields, files) => {
       if (err) return reject(err);
