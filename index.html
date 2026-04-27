@@ -50,6 +50,11 @@
  html {
  scroll-behavior: smooth;
  color-scheme: light;
+ /* Match body color so any horizontal-overflow gap that escapes body shows
+    cream, not browser-default white. Pair with overflow-x: clip below. */
+ background: var(--cream);
+ /* clip (vs hidden) doesn't break position:sticky on descendants like the nav */
+ overflow-x: clip;
  }
 
  body {
