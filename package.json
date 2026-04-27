@@ -8,8 +8,8 @@
   },
   "dependencies": {
     "square": "^39.0.0",
-    "@signalwire/compatibility-api": "^4.0.0",
-    "@vercel/blob": "^0.23.0",
+    "@signalwire/compatibility-api": "^3.2.0",
+    "@vercel/blob": "^2.3.0",
     "formidable": "^3.5.0"
   }
 }
