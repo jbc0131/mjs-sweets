@@ -423,6 +423,22 @@
  background-size: 200% 200%;
  animation: gradientShift 8s ease infinite;
  }
+
+ /* Real product photo (used when a product has a `photo` field defined).
+  object-fit: contain preserves the photo's aspect ratio; transparent areas
+  let the parent's brand gradient show through. Container-specific padding
+  scales the image for each context (large card vs cart thumbnail). */
+ img.product-photo {
+ display: block;
+ width: 100%;
+ height: 100%;
+ object-fit: contain;
+ padding: 0.75rem;
+ box-sizing: border-box;
+ }
+ .addon-img img.product-photo { padding: 0.4rem; }
+ .cart-item-img img.product-photo { padding: 0.15rem; }
+ .product-img-compact img.product-photo { padding: 0.3rem; }
  .product-img.ricecrispies { background: linear-gradient(135deg, #FFF0E5, #FFD6E0); }
  .product-img.pretzels { background: linear-gradient(135deg, #E8C9A0, #8B5A3C); }
  @keyframes gradientShift {
@@ -2295,6 +2311,7 @@
  desc: "Pick your flavor",
  price: 24,
  img: "🍭",
+ photo: "/cake_pops.png",
  cls: "cakepops",
  isCakePop: true,
  flavors: ['Chocolate', 'Vanilla', 'Funfetti', 'Red Velvet', 'Lemon', 'Strawberry']
@@ -2379,6 +2396,18 @@
  let cart = [];
  let pendingProductId = null;
  let pendingFlavor = null;
+
+ // ---------- Display helpers ----------
+
+ // Render a product's visual: real photo if uploaded, emoji as fallback.
+ // The product's gradient background (.cakepops, .mothers, etc.) shows through
+ // any transparent areas of the photo — keeps brand colors even with real images.
+ function renderProductImage(p) {
+   if (p.photo) {
+     return `<img src="${p.photo}" alt="${p.name}" class="product-photo" loading="lazy" />`;
+   }
+   return p.img;
+ }
 
  // ---------- Cart helpers ----------
 
@@ -2469,7 +2498,7 @@
  <div class="product-card ${sizeClass}">
  <div class="product-img ${p.cls}">
  <span class="product-tag tag-yearround">Perfect Add-On ✨</span>
- ${p.img}
+ ${renderProductImage(p)}
  </div>
  <div class="product-body">
  <div class="product-name">${p.name}</div>
@@ -2492,7 +2521,7 @@
  <div class="product-card ${sizeClass}">
  <div class="product-img ${p.cls}">
  <span class="product-tag tag-yearround">Perfect Add-On ✨</span>
- ${p.img}
+ ${renderProductImage(p)}
  </div>
  <div class="product-body">
  <div class="product-name">${p.name}</div>
@@ -2519,7 +2548,7 @@
  return `
  <div class="product-card product-card-compact is-unavailable">
  <div class="product-img-compact ${p.cls}">
- ${p.img}
+ ${renderProductImage(p)}
  </div>
  <div class="product-body-compact">
  <div class="product-name-compact">${p.name}</div>
@@ -2535,7 +2564,7 @@
  <div class="product-card ${status.canOrder ? '' : 'is-unavailable'}" id="product-${p.id}">
  <div class="product-img ${p.cls}">
  <span class="product-tag tag-${status.badgeClass}">${status.badge}</span>
- ${p.img}
+ ${renderProductImage(p)}
  </div>
  <div class="product-body">
  <div class="product-name">${p.name}</div>
@@ -2598,7 +2627,7 @@
  const idAttr = isFlavored ? '' : `id="btn-${p.id}"`;
  return `
  <div class="addon-card">
- <div class="addon-img ${p.cls}">${p.img}</div>
+ <div class="addon-img ${p.cls}">${renderProductImage(p)}</div>
  <div class="addon-body">
  <div>
  <div class="addon-name">${p.name}</div>
@@ -2699,7 +2728,7 @@
        const displayName = flavor ? `${product.name}, ${flavor}` : product.name;
        return `
          <div class="cart-item">
-           <div class="cart-item-img ${product.cls}">${product.img}</div>
+           <div class="cart-item-img ${product.cls}">${renderProductImage(product)}</div>
            <div class="cart-item-info">
              <div class="cart-item-name">${displayName}</div>
              <div class="cart-item-price">$${product.price.toFixed(2)} ${unitLabel(product.priceUnit)}</div>
