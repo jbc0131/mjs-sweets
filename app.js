@@ -976,6 +976,45 @@
    'CUSTOM-SHOW-DZN': 'Showstopper Custom Dozen',
  };
 
+ // Optional add-ons appended to a custom order's Square Order as additional
+ // line items. Cake pops require a flavor pick (one flavor per dozen, matches
+ // the cart UX); rice krispies + pretzel rods are single-SKU.
+ // Prices here are display-only; server validates against Square Catalog.
+ const ADDON_DEFS = {
+   'cake-pops': {
+     label: 'Cake Pops',
+     priceCents: 2400,
+     needsFlavor: true,
+     checkId: 'addonCakePopsCheck',
+     qtyInputId: 'addonCakePopsQty',
+     flavorSelectId: 'addonCakePopsFlavor',
+     flavorByValue: {
+       'POP-CHOC': 'Chocolate',
+       'POP-VAN':  'Vanilla',
+       'POP-FUN':  'Funfetti',
+       'POP-RV':   'Red Velvet',
+       'POP-LEM':  'Lemon',
+       'POP-STR':  'Strawberry',
+     },
+   },
+   'rice-krispies': {
+     label: 'Rice Krispies Treats',
+     priceCents: 2400,
+     needsFlavor: false,
+     sku: 'KRIS-DZ',
+     checkId: 'addonRiceKrispiesCheck',
+     qtyInputId: 'addonRiceKrispiesQty',
+   },
+   'pretzel-rods': {
+     label: 'Dipped Pretzel Rods',
+     priceCents: 2400,
+     needsFlavor: false,
+     sku: 'PRETZ-DZ',
+     checkId: 'addonPretzelRodsCheck',
+     qtyInputId: 'addonPretzelRodsQty',
+   },
+ };
+
  // Per-modal-session state
  let customSquareCard = null;
  let customSquareApplePay = null;
@@ -1036,6 +1075,63 @@
      });
    }
 
+   // --- Add-ons: checkbox toggles, flavor select, qty stepper buttons ---
+   form.querySelectorAll('.addon-row').forEach(row => {
+     const key = row.dataset.addonKey;
+     const def = ADDON_DEFS[key];
+     if (!def) return;
+     const check = document.getElementById(def.checkId);
+     const controls = row.querySelector('.addon-controls');
+     const qtyInput = document.getElementById(def.qtyInputId);
+     const flavor = def.needsFlavor ? document.getElementById(def.flavorSelectId) : null;
+     if (!check || !controls || !qtyInput) return;
+
+     // Checkbox toggle reveals/hides the qty + flavor controls and the
+     // .is-active style. We always recompute total on change so an unchecked
+     // add-on subtracts from the live total immediately.
+     check.addEventListener('change', () => {
+       if (check.checked) {
+         row.classList.add('is-active');
+         controls.hidden = false;
+       } else {
+         row.classList.remove('is-active');
+         controls.hidden = true;
+       }
+       updateCustomTotal();
+     });
+
+     if (flavor) flavor.addEventListener('change', updateCustomTotal);
+
+     qtyInput.addEventListener('input', updateCustomTotal);
+     qtyInput.addEventListener('blur', () => {
+       qtyInput.value = String(clamp(qtyInput.value));
+       updateCustomTotal();
+     });
+   });
+
+   // Add-on stepper buttons — wired via [data-action="addon-minus|plus"][data-key=...]
+   form.querySelectorAll('.tier-qty-btn[data-action]').forEach(btn => {
+     const action = btn.dataset.action;
+     const key = btn.dataset.key;
+     if (!action || !key) return;
+     const def = ADDON_DEFS[key];
+     if (!def) return;
+     const qtyInput = document.getElementById(def.qtyInputId);
+     if (!qtyInput) return;
+     btn.addEventListener('click', () => {
+       const cur = parseInt(qtyInput.value, 10);
+       const next = action === 'addon-plus' ? cur + 1 : cur - 1;
+       qtyInput.value = String(clamp(next));
+       updateCustomTotal();
+     });
+   });
+
+   // If browser restored cached form state (e.g., user hit back), sync the
+   // visual state of any pre-checked add-ons to match.
+   form.querySelectorAll('.addon-check').forEach(cb => {
+     if (cb.checked) cb.dispatchEvent(new Event('change'));
+   });
+
    updateCustomTotal();
  }
 
@@ -1047,10 +1143,44 @@
    const v = parseInt(document.getElementById('reqDozens')?.value, 10);
    return Number.isFinite(v) ? Math.max(1, Math.min(10, v)) : 1;
  }
+
+ // Returns [{ sku, qty, displayName, priceCents }, ...] for every add-on
+ // the customer has checked AND filled in (cake pops without flavor are
+ // skipped here; handleRequest separately surfaces an error so they don't
+ // submit silently). Used for both client-side total + checkout payload.
+ function getSelectedAddons() {
+   const out = [];
+   for (const [key, def] of Object.entries(ADDON_DEFS)) {
+     const check = document.getElementById(def.checkId);
+     if (!check?.checked) continue;
+     const qty = parseInt(document.getElementById(def.qtyInputId)?.value, 10);
+     if (!Number.isInteger(qty) || qty < 1 || qty > 10) continue;
+
+     let sku, displayName;
+     if (def.needsFlavor) {
+       const flavorVal = document.getElementById(def.flavorSelectId)?.value || '';
+       if (!flavorVal) continue; // flavor not picked yet — don't count toward total
+       sku = flavorVal;
+       displayName = `${def.label}, ${def.flavorByValue[flavorVal] || flavorVal}`;
+     } else {
+       sku = def.sku;
+       displayName = def.label;
+     }
+     out.push({ sku, qty, displayName, priceCents: def.priceCents });
+   }
+   return out;
+ }
+
  function computeCustomTotalCents() {
+   let cents = 0;
    const tier = getSelectedTier();
-   if (!tier || !TIER_PRICE_CENTS[tier]) return 0;
-   return TIER_PRICE_CENTS[tier] * getSelectedDozens();
+   if (tier && TIER_PRICE_CENTS[tier]) {
+     cents += TIER_PRICE_CENTS[tier] * getSelectedDozens();
+   }
+   for (const a of getSelectedAddons()) {
+     cents += a.priceCents * a.qty;
+   }
+   return cents;
  }
  function formatUSD(cents) {
    return `$${(cents / 100).toFixed(2)}`;
@@ -1112,16 +1242,22 @@
    return `${rand(8)}-${rand(4)}-4${rand(3)}-${rand(4)}-${rand(12)}`;
  }
 
- // Opens the custom-order checkout modal with the given customer + tier + qty.
- // Idempotency key is generated once here and reused across retries inside
- // this modal session — protects against duplicate Square Orders if the user
- // double-clicks Pay or the network hiccups during processCustomPayment.
- async function openCustomCheckout(customer, tier, dozens) {
+ // Opens the custom-order checkout modal with the given customer, tier, qty,
+ // and optional add-ons. Idempotency key is generated once here and reused
+ // across retries inside this modal session — protects against duplicate
+ // Square Orders if the user double-clicks Pay or the network hiccups during
+ // processCustomPayment.
+ async function openCustomCheckout(customer, tier, dozens, addons) {
+   const safeAddons = Array.isArray(addons) ? addons : [];
+   const tierSubtotal = TIER_PRICE_CENTS[tier] * dozens;
+   const addonsSubtotal = safeAddons.reduce((s, a) => s + a.priceCents * a.qty, 0);
+
    customCheckoutCustomer = customer;
    customCheckoutPayload = {
      tier,
      dozens,
-     totalCents: TIER_PRICE_CENTS[tier] * dozens,
+     addons: safeAddons,
+     totalCents: tierSubtotal + addonsSubtotal,
    };
    customCheckoutIdempotencyKey = newIdempotencyKey();
    customCheckoutInFlight = false;
@@ -1135,12 +1271,22 @@
    document.getElementById('customCheckoutError').hidden = true;
    document.getElementById('customCheckoutError').textContent = '';
 
-   // Summary line + total
-   document.getElementById('customCheckoutSummary').innerHTML = `
-     <div class="checkout-summary-row">
-       <div>${TIER_NAME[tier]} <span class="item-qty">× ${dozens}</span></div>
-       <div>${formatUSD(total)}</div>
-     </div>`;
+   // Multi-line summary: tier first, then each add-on.
+   // displayName values come from our hardcoded ADDON_DEFS / TIER_NAME, so
+   // they don't need HTML escaping. If we ever pull display names from a
+   // remote source, escape them here.
+   const summaryRows = [
+     `<div class="checkout-summary-row">
+        <div>${TIER_NAME[tier]} <span class="item-qty">× ${dozens}</span></div>
+        <div>${formatUSD(tierSubtotal)}</div>
+      </div>`,
+     ...safeAddons.map(a => `
+       <div class="checkout-summary-row">
+         <div>${a.displayName} <span class="item-qty">× ${a.qty}</span></div>
+         <div>${formatUSD(a.priceCents * a.qty)}</div>
+       </div>`),
+   ];
+   document.getElementById('customCheckoutSummary').innerHTML = summaryRows.join('');
    document.getElementById('customCheckoutTotal').textContent = formatUSD(total);
    const payBtn = document.getElementById('customCheckoutPayBtn');
    payBtn.querySelector('.pay-btn-label').textContent = `Pay ${formatUSD(total)}`;
@@ -1159,10 +1305,16 @@
        countryCode: 'US',
        currencyCode: 'USD',
        total: { amount: (total / 100).toFixed(2), label: "MJ's Sweets" },
-       lineItems: [{
-         label: `${TIER_NAME[tier]} × ${dozens}`,
-         amount: (total / 100).toFixed(2),
-       }],
+       lineItems: [
+         {
+           label: `${TIER_NAME[tier]} × ${dozens}`,
+           amount: (tierSubtotal / 100).toFixed(2),
+         },
+         ...safeAddons.map(a => ({
+           label: `${a.displayName} × ${a.qty}`,
+           amount: ((a.priceCents * a.qty) / 100).toFixed(2),
+         })),
+       ],
      });
      await Promise.all([
        mountCustomSquareCard(),
@@ -1285,8 +1437,12 @@
      formData.append('paymentToken', paymentToken);
      formData.append('paymentMethod', methodName);
      formData.append('idempotencyKey', customCheckoutIdempotencyKey);
-     // tier + dozens are already form fields via the radios + number input,
-     // so they ride along automatically.
+     // Add-ons travel as a JSON-stringified array — server parses + validates
+     // each {sku, qty} against the catalog. tier + dozens are already form
+     // fields via the radios + number input, so they ride along automatically.
+     const addonsForServer = (customCheckoutPayload.addons || [])
+       .map(a => ({ sku: a.sku, qty: a.qty }));
+     formData.append('addons', JSON.stringify(addonsForServer));
 
      const res = await fetch('/api/contact', { method: 'POST', body: formData });
      const data = await res.json().catch(() => ({}));
@@ -1299,11 +1455,17 @@
      showCustomCheckoutSuccess(data);
 
      // Reset outer form so a second order doesn't carry stale state.
-     // Photos preview is its own DOM, must be cleared explicitly.
+     // Photos preview + tier .is-selected + add-on UI all need explicit
+     // cleanup since form.reset() doesn't touch class state or hidden=true.
      form.reset();
      document.getElementById('reqPhotoPreview').hidden = true;
      document.getElementById('reqPhotoPreview').innerHTML = '';
      form.querySelectorAll('.tier-card').forEach(c => c.classList.remove('is-selected'));
+     form.querySelectorAll('.addon-row').forEach(row => {
+       row.classList.remove('is-active');
+       const ctrls = row.querySelector('.addon-controls');
+       if (ctrls) ctrls.hidden = true;
+     });
      updateCustomTotal();
    } catch (err) {
      console.error('Custom checkout submit error:', err);
@@ -1470,6 +1632,19 @@
      return showError('Custom orders need at least 14 days lead time. Please pick a later date.', document.getElementById('reqDate'));
    }
 
+   // Add-on validation: if Cake Pops is checked but no flavor is selected,
+   // the add-on would silently drop from getSelectedAddons(). Surface a clear
+   // error instead so the customer knows why their cake-pop add-on isn't
+   // appearing in the total.
+   const cakePopsCheck = document.getElementById('addonCakePopsCheck');
+   if (cakePopsCheck?.checked) {
+     const flavorSel = document.getElementById('addonCakePopsFlavor');
+     if (!flavorSel?.value) {
+       return showError('Please pick a cake pop flavor (or uncheck Cake Pops).', flavorSel);
+     }
+   }
+   const addons = getSelectedAddons();
+
    const customer = {
      name:  document.getElementById('reqName').value.trim(),
      phone: phoneInput.value.trim(),
@@ -1477,7 +1652,7 @@
    };
 
    // Hand off to the checkout modal — it handles tokenization + POST.
-   await openCustomCheckout(customer, tier, dozens);
+   await openCustomCheckout(customer, tier, dozens, addons);
  }
 
  // Stamp current year in the footer so it never goes stale

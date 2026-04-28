@@ -251,11 +251,76 @@
  <div class="tier-qty-range">(1–10)</div>
  </div>
  <div class="tier-qty-overflow-hint">Need more than 10 dozen? <a href="sms:+15045596466">Text Maddie at (504) 559-6466</a> to plan a larger order.</div>
+ </div>
 
+ <!-- ADD-ONS PICKER — optional treats added to the same Square Order as the
+      custom dozen. Cake pops use single-flavor-per-dozen (matches cart UX);
+      mixed-flavor sets are a "text Maddie" path. JS in initCustomOrderForm()
+      wires the checkbox toggles, flavor select, qty steppers, and total. -->
+ <div class="addons-picker" id="addonsPicker">
+ <div class="addons-picker-heading">
+ <div class="addons-picker-label">Add some treats? <span class="addons-picker-hint">(optional)</span></div>
+ </div>
+
+ <div class="addon-row" data-addon-key="cake-pops" data-needs-flavor="true">
+ <label class="addon-toggle">
+ <input type="checkbox" class="addon-check" id="addonCakePopsCheck" data-key="cake-pops" />
+ <span class="addon-name">Cake Pops</span>
+ <span class="addon-price">$24/dz</span>
+ </label>
+ <div class="addon-controls" hidden>
+ <select class="addon-flavor" id="addonCakePopsFlavor" aria-label="Cake pop flavor">
+ <option value="">Pick a flavor…</option>
+ <option value="POP-CHOC">Chocolate</option>
+ <option value="POP-VAN">Vanilla</option>
+ <option value="POP-FUN">Funfetti</option>
+ <option value="POP-RV">Red Velvet</option>
+ <option value="POP-LEM">Lemon</option>
+ <option value="POP-STR">Strawberry</option>
+ </select>
+ <div class="tier-qty-stepper" role="group" aria-label="Cake pop quantity in dozens">
+ <button type="button" class="tier-qty-btn" data-action="addon-minus" data-key="cake-pops" aria-label="Decrease">−</button>
+ <input type="number" class="addon-qty-input" id="addonCakePopsQty" data-key="cake-pops" min="1" max="10" step="1" value="1" inputmode="numeric" />
+ <button type="button" class="tier-qty-btn" data-action="addon-plus" data-key="cake-pops" aria-label="Increase">+</button>
+ </div>
+ </div>
+ </div>
+
+ <div class="addon-row" data-addon-key="rice-krispies" data-sku="KRIS-DZ">
+ <label class="addon-toggle">
+ <input type="checkbox" class="addon-check" id="addonRiceKrispiesCheck" data-key="rice-krispies" />
+ <span class="addon-name">Rice Krispies Treats</span>
+ <span class="addon-price">$24/dz</span>
+ </label>
+ <div class="addon-controls" hidden>
+ <div class="tier-qty-stepper" role="group" aria-label="Rice Krispies quantity in dozens">
+ <button type="button" class="tier-qty-btn" data-action="addon-minus" data-key="rice-krispies" aria-label="Decrease">−</button>
+ <input type="number" class="addon-qty-input" id="addonRiceKrispiesQty" data-key="rice-krispies" min="1" max="10" step="1" value="1" inputmode="numeric" />
+ <button type="button" class="tier-qty-btn" data-action="addon-plus" data-key="rice-krispies" aria-label="Increase">+</button>
+ </div>
+ </div>
+ </div>
+
+ <div class="addon-row" data-addon-key="pretzel-rods" data-sku="PRETZ-DZ">
+ <label class="addon-toggle">
+ <input type="checkbox" class="addon-check" id="addonPretzelRodsCheck" data-key="pretzel-rods" />
+ <span class="addon-name">Dipped Pretzel Rods</span>
+ <span class="addon-price">$24/dz</span>
+ </label>
+ <div class="addon-controls" hidden>
+ <div class="tier-qty-stepper" role="group" aria-label="Pretzel rod quantity in dozens">
+ <button type="button" class="tier-qty-btn" data-action="addon-minus" data-key="pretzel-rods" aria-label="Decrease">−</button>
+ <input type="number" class="addon-qty-input" id="addonPretzelRodsQty" data-key="pretzel-rods" min="1" max="10" step="1" value="1" inputmode="numeric" />
+ <button type="button" class="tier-qty-btn" data-action="addon-plus" data-key="pretzel-rods" aria-label="Increase">+</button>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- Grand total — tier × dozens + each selected add-on. Hidden until tier picked. -->
  <div class="tier-total-row" id="reqTotalRow" hidden>
  <span class="tier-total-label">Total</span>
  <span class="tier-total-amount" id="reqTotal">$0.00</span>
- </div>
  </div>
 
  <div class="form-error" id="reqError" role="alert" hidden></div>

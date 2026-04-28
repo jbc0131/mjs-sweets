@@ -52,6 +52,18 @@ const TIER_DISPLAY_NAME = {
   'CUSTOM-SHOW-DZN': 'Showstopper Custom Dozen',
 };
 
+// ---- Optional add-ons whitelist ----
+// Cake pop variations (POP-*) + KRIS-DZ + PRETZ-DZ. Server fetches authoritative
+// prices from Square Catalog; this set is only for input validation. Sanity
+// price floor for add-ons is wider than the tier check since they're cheaper.
+const ALLOWED_ADDON_SKUS = new Set([
+  'POP-CHOC', 'POP-VAN', 'POP-FUN', 'POP-RV', 'POP-LEM', 'POP-STR',
+  'KRIS-DZ', 'PRETZ-DZ',
+]);
+const MAX_ADDON_LINES = 8; // 3 distinct add-on rows in the UI; cap defensively.
+const ADDON_PRICE_CENTS_MIN = 100;     // catches accidental zero
+const ADDON_PRICE_CENTS_MAX = 10_000;  // catches wildly wrong catalog data
+
 // ---- Square client ----
 const square = new Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
@@ -108,8 +120,20 @@ async function fetchCatalogEntries(skus) {
     if (!parent || parent.isDeleted) continue;
     if (parent.itemData?.isArchived) continue;
 
+    // If the parent item has multiple variations (e.g., Cake Pops with 6
+    // flavors), include the variation name so emails show "Cake Pops,
+    // Chocolate" instead of just "Cake Pops". For single-variation items
+    // (tiers, KRIS-DZ, PRETZ-DZ) the variation name is just a unit label
+    // ("1 Dozen") and we drop it.
+    const itemName = parent.itemData?.name || TIER_DISPLAY_NAME[data.sku] || 'Item';
+    const variationName = data.name || '';
+    const variationCount = parent.itemData?.variations?.length || 1;
+    const displayName = (variationCount > 1 && variationName)
+      ? `${itemName}, ${variationName}`
+      : itemName;
+
     const entry = {
-      name: parent.itemData?.name || TIER_DISPLAY_NAME[data.sku] || 'Custom Order',
+      name: displayName,
       priceCents: Number(data.priceMoney.amount),
       currency: data.priceMoney.currency || 'USD',
       catalogObjectId: v.id,
@@ -249,6 +273,49 @@ async function handler(req, res) {
     });
   }
 
+  // ---- Parse + validate add-ons (cake pops, rice krispies, pretzel rods) ----
+  // The client sends these as a JSON-stringified array of {sku, qty}. Empty or
+  // missing addons field is fine — the order is just a tier-only purchase.
+  let requestedAddons = [];
+  const addonsRaw = sanitize(get('addons'));
+  if (addonsRaw) {
+    let parsed;
+    try {
+      parsed = JSON.parse(addonsRaw);
+    } catch (_) {
+      return res.status(400).json({ error: 'Invalid add-ons format' });
+    }
+    if (!Array.isArray(parsed)) {
+      return res.status(400).json({ error: 'Invalid add-ons format' });
+    }
+    if (parsed.length > MAX_ADDON_LINES) {
+      return res.status(400).json({ error: `Too many add-on lines (max ${MAX_ADDON_LINES}).` });
+    }
+    // Coalesce duplicate SKUs by summing qty (defensive — client shouldn't send
+    // dupes but a malformed payload could). Validates each row before adding.
+    const seen = new Map();
+    for (const a of parsed) {
+      if (!a || typeof a !== 'object') {
+        return res.status(400).json({ error: 'Invalid add-on entry' });
+      }
+      const sku = String(a.sku || '').trim();
+      if (!ALLOWED_ADDON_SKUS.has(sku)) {
+        return res.status(400).json({ error: `Unknown add-on SKU: ${sku}` });
+      }
+      const q = parseInt(a.qty, 10);
+      if (!Number.isInteger(q) || q < 1 || q > 10) {
+        return res.status(400).json({ error: `Invalid add-on quantity for ${sku}` });
+      }
+      seen.set(sku, (seen.get(sku) || 0) + q);
+    }
+    for (const [sku, qty] of seen.entries()) {
+      if (qty > 10) {
+        return res.status(400).json({ error: `Add-on quantity exceeds max (10) for ${sku}` });
+      }
+      requestedAddons.push({ sku, qty });
+    }
+  }
+
   // ---- Collect uploaded photos ----
   let photoFiles = files?.inspiration_photos;
   if (!photoFiles) photoFiles = [];
@@ -305,34 +372,75 @@ async function handler(req, res) {
     });
   }
 
-  // ---- Fetch authoritative price from Square Catalog ----
-  let catalogEntry;
+  // ---- Fetch authoritative prices from Square Catalog (tier + add-ons) ----
+  // Single Catalog call covers everything; cached responses are reused.
+  const allSkus = [tier, ...requestedAddons.map(a => a.sku)];
+  let catalog;
   try {
-    const catalog = await fetchCatalogEntries([tier]);
-    catalogEntry = catalog[tier];
+    catalog = await fetchCatalogEntries(allSkus);
   } catch (err) {
     console.error('Catalog fetch error:', err);
     return res.status(502).json({
-      error: 'Could not look up tier pricing. Try again in a moment.',
+      error: 'Could not look up pricing. Try again in a moment.',
       detail: err.message || String(err),
     });
   }
-  if (!catalogEntry) {
+
+  const tierEntry = catalog[tier];
+  if (!tierEntry) {
     return res.status(400).json({
       error: 'Tier not currently available',
       detail: `Tier ${tier} isn't sellable in Square right now. Please text Maddie at (504) 559-6466.`,
     });
   }
-
-  // Sanity floor — catches accidental zeros / data corruption / wild prices.
-  if (catalogEntry.priceCents < 1000 || catalogEntry.priceCents > 20_000) {
-    console.error('Catalog price out of expected range', { tier, priceCents: catalogEntry.priceCents });
+  if (tierEntry.priceCents < 1000 || tierEntry.priceCents > 20_000) {
+    console.error('Tier price out of expected range', { tier, priceCents: tierEntry.priceCents });
     return res.status(500).json({
       error: 'Tier pricing looks wrong. Please text Maddie at (504) 559-6466.',
     });
   }
 
-  const totalCents = catalogEntry.priceCents * dozens;
+  // Build line items array — tier first, then each add-on. We carry both the
+  // Square line-item shape (for createOrder) and a lighter display copy used
+  // in emails / SMS / payment note.
+  const orderLineItems = [{
+    catalogObjectId: tierEntry.catalogObjectId,
+    quantity: String(dozens),
+    basePriceMoney: { amount: BigInt(tierEntry.priceCents), currency: tierEntry.currency },
+    name: TIER_DISPLAY_NAME[tier] || tierEntry.name,
+  }];
+  const displayLines = [{
+    name: TIER_DISPLAY_NAME[tier] || tierEntry.name,
+    qty: dozens,
+    priceCents: tierEntry.priceCents,
+    subtotalCents: tierEntry.priceCents * dozens,
+  }];
+  let totalCents = tierEntry.priceCents * dozens;
+
+  for (const a of requestedAddons) {
+    const e = catalog[a.sku];
+    if (!e) {
+      return res.status(400).json({
+        error: 'Add-on not currently available',
+        detail: `${a.sku} isn't sellable in Square right now. Please text Maddie at (504) 559-6466.`,
+      });
+    }
+    if (e.priceCents < ADDON_PRICE_CENTS_MIN || e.priceCents > ADDON_PRICE_CENTS_MAX) {
+      console.error('Add-on price out of expected range', { sku: a.sku, priceCents: e.priceCents });
+      return res.status(500).json({
+        error: 'Add-on pricing looks wrong. Please text Maddie at (504) 559-6466.',
+      });
+    }
+    orderLineItems.push({
+      catalogObjectId: e.catalogObjectId,
+      quantity: String(a.qty),
+      basePriceMoney: { amount: BigInt(e.priceCents), currency: e.currency },
+      name: e.name,
+    });
+    const sub = e.priceCents * a.qty;
+    displayLines.push({ name: e.name, qty: a.qty, priceCents: e.priceCents, subtotalCents: sub });
+    totalCents += sub;
+  }
 
   // ---- Create Square Order + Charge ----
   // Both calls use idempotency keys derived from the client-provided UUID,
@@ -343,20 +451,13 @@ async function handler(req, res) {
       idempotencyKey: idempotencyKey,
       order: {
         locationId: process.env.SQUARE_LOCATION_ID,
-        lineItems: [{
-          catalogObjectId: catalogEntry.catalogObjectId,
-          quantity: String(dozens),
-          basePriceMoney: {
-            amount: BigInt(catalogEntry.priceCents),
-            currency: catalogEntry.currency,
-          },
-          name: TIER_DISPLAY_NAME[tier] || catalogEntry.name,
-        }],
+        lineItems: orderLineItems,
         metadata: {
           source: 'mjssweets-website',
           flow: 'custom-order',
           tier: tier,
           dozens: String(dozens),
+          addon_count: String(requestedAddons.length),
           customer_name: name.slice(0, 100),
           customer_phone: phone.slice(0, 20),
           occasion: occasionDisplay.slice(0, 100),
@@ -367,6 +468,10 @@ async function handler(req, res) {
     });
     orderId = orderRes.result.order.id;
 
+    const noteSummary = requestedAddons.length > 0
+      ? `Custom: ${TIER_DISPLAY_NAME[tier]} × ${dozens} + ${requestedAddons.length} add-on${requestedAddons.length === 1 ? '' : 's'} · ${name} · needs ${dateNeeded}`
+      : `Custom: ${TIER_DISPLAY_NAME[tier]} × ${dozens} · ${name} · needs ${dateNeeded}`;
+
     const paymentRes = await square.paymentsApi.createPayment({
       idempotencyKey: `${idempotencyKey}-pay`,
       sourceId: paymentToken,
@@ -376,7 +481,7 @@ async function handler(req, res) {
       },
       orderId,
       buyerEmailAddress: email,
-      note: `Custom: ${TIER_DISPLAY_NAME[tier]} × ${dozens} · ${name} · needs ${dateNeeded}`,
+      note: noteSummary.slice(0, 500), // Square caps note length
     });
     paymentId = paymentRes.result.payment.id;
     receiptUrl = paymentRes.result.payment.receiptUrl;
@@ -400,7 +505,8 @@ async function handler(req, res) {
 
   const orderShortId = (orderId || '').slice(0, 8) || 'order';
 
-  // Build email payloads
+  // Build email payloads. `lineItems` lets the templates render a full
+  // breakdown (tier + each add-on) rather than just the tier line.
   const orderPayload = {
     name,
     phone,
@@ -413,6 +519,8 @@ async function handler(req, res) {
     tier,
     tierName: TIER_DISPLAY_NAME[tier],
     dozens,
+    addonCount: requestedAddons.length,
+    lineItems: displayLines, // [{ name, qty, priceCents, subtotalCents }, ...]
     totalCents,
     orderId,
     orderShortId,
@@ -436,14 +544,21 @@ async function handler(req, res) {
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   // SMS body — kept ASCII so it stays in GSM-7 encoding (160-char segments).
+  // Lists tier first then each add-on so Maddie sees the full bundle at a glance.
   const smsLines = [
     `PAID custom order from ${name}`,
-    `${TIER_DISPLAY_NAME[tier]} x ${dozens} = $${(totalCents / 100).toFixed(2)}`,
+    `Total: $${(totalCents / 100).toFixed(2)}`,
+  ];
+  for (const li of displayLines) {
+    smsLines.push(`- ${li.name} x ${li.qty} = $${(li.subtotalCents / 100).toFixed(2)}`);
+  }
+  smsLines.push(
+    '',
     `${phone} | ${email}`,
     `${occasionDisplay} - needs ${formatDate(dateNeeded)}`,
     '',
     `Vision: ${truncate(vision, 160)}`,
-  ];
+  );
   if (photoUrls.length > 0) {
     smsLines.push('', `Photos (${photoUrls.length}):`);
     photoUrls.forEach(url => smsLines.push(url));
@@ -535,9 +650,38 @@ async function sendSignalWireSms(smsBody) {
 // Email templates — Maddie's notification (enhanced) + customer confirmation (new)
 // =========================================================================
 
+// Renders the order's line items as <br>-separated rows inside one table cell.
+// Used in both Maddie's notification email and the customer confirmation email,
+// so cake-pop flavors and bundled add-ons show up cleanly in both.
+function buildItemsRowHtml(lineItems) {
+  if (!Array.isArray(lineItems) || lineItems.length === 0) return '';
+  const rows = lineItems.map(li => {
+    const sub = `$${(li.subtotalCents / 100).toFixed(2)}`;
+    return `${escapeHtml(li.name)} <span style="color:#5C4A6B;">× ${escapeHtml(String(li.qty))}</span> &nbsp;·&nbsp; <strong>${escapeHtml(sub)}</strong>`;
+  }).join('<br>');
+  return `
+    <tr>
+      <td style="font-weight:600;color:#5C4A6B;font-size:14px;vertical-align:top;width:110px;padding-top:10px;">Items</td>
+      <td style="font-size:15px;color:#2A1A2E;line-height:1.8;">
+        ${rows}
+      </td>
+    </tr>
+    <tr><td colspan="2" style="border-top:1px dashed #F0E2D2;height:1px;line-height:0;font-size:0;">&nbsp;</td></tr>`;
+}
+
+// Plain-text version — returns an array of indented lines that the caller
+// splices into its line list.
+function buildItemsTextLines(lineItems) {
+  if (!Array.isArray(lineItems) || lineItems.length === 0) return [];
+  return lineItems.map(li =>
+    `  ${li.name} × ${li.qty} = $${(li.subtotalCents / 100).toFixed(2)}`
+  );
+}
+
 function buildOrderEmailHtml(p) {
   const phoneRaw = (p.phone || '').replace(/\D/g, '');
   const totalUsd = `$${(p.totalCents / 100).toFixed(2)}`;
+  const itemsRow = buildItemsRowHtml(p.lineItems);
   const photoTiles = (p.photoUrls || []).map(url => `
     <td style="padding:6px;">
       <a href="${escapeHtml(url)}" target="_blank" rel="noopener" style="display:inline-block;border-radius:10px;overflow:hidden;">
@@ -601,16 +745,7 @@ function buildOrderEmailHtml(p) {
                   <td><a href="mailto:${escapeHtml(p.email)}" style="color:#FF3B7F;text-decoration:none;font-size:16px;">${escapeHtml(p.email)}</a></td>
                 </tr>
                 <tr><td colspan="2" style="border-top:1px dashed #F0E2D2;height:1px;line-height:0;font-size:0;">&nbsp;</td></tr>
-                <tr>
-                  <td style="font-weight:600;color:#5C4A6B;font-size:14px;vertical-align:top;">Tier</td>
-                  <td style="font-size:16px;font-weight:600;">${escapeHtml(p.tierName)}</td>
-                </tr>
-                <tr><td colspan="2" style="border-top:1px dashed #F0E2D2;height:1px;line-height:0;font-size:0;">&nbsp;</td></tr>
-                <tr>
-                  <td style="font-weight:600;color:#5C4A6B;font-size:14px;vertical-align:top;">Quantity</td>
-                  <td style="font-size:16px;">${escapeHtml(String(p.dozens))} dozen</td>
-                </tr>
-                <tr><td colspan="2" style="border-top:1px dashed #F0E2D2;height:1px;line-height:0;font-size:0;">&nbsp;</td></tr>
+                ${itemsRow}
                 <tr>
                   <td style="font-weight:600;color:#5C4A6B;font-size:14px;vertical-align:top;">Paid</td>
                   <td style="font-size:18px;font-weight:700;color:#6BCB77;">${escapeHtml(totalUsd)}</td>
@@ -655,6 +790,7 @@ function buildOrderEmailHtml(p) {
 
 function buildOrderEmailText(p) {
   const totalUsd = `$${(p.totalCents / 100).toFixed(2)}`;
+  const itemLines = buildItemsTextLines(p.lineItems);
   const lines = [
     'NEW CUSTOM ORDER — PAID IN FULL',
     '================================',
@@ -665,8 +801,9 @@ function buildOrderEmailText(p) {
     `From:      ${p.name}`,
     `Phone:     ${p.phone}`,
     `Email:     ${p.email}`,
-    `Tier:      ${p.tierName}`,
-    `Quantity:  ${p.dozens} dozen`,
+    'Items:',
+    ...itemLines,
+    '',
     `Occasion:  ${p.occasion}`,
     `Needed by: ${p.dateNeeded}`,
     '',
@@ -731,16 +868,7 @@ function buildCustomerEmailHtml(p) {
               </p>
 
               <table cellpadding="10" cellspacing="0" border="0" width="100%" style="background:#FFF8F0;border-radius:12px;margin-bottom:8px;">
-                <tr>
-                  <td style="font-weight:600;color:#5C4A6B;font-size:14px;width:110px;">Tier</td>
-                  <td style="font-size:15px;font-weight:600;color:#2A1A2E;">${escapeHtml(p.tierName)}</td>
-                </tr>
-                <tr><td colspan="2" style="border-top:1px dashed #F0E2D2;height:1px;line-height:0;font-size:0;">&nbsp;</td></tr>
-                <tr>
-                  <td style="font-weight:600;color:#5C4A6B;font-size:14px;">Quantity</td>
-                  <td style="font-size:15px;">${escapeHtml(String(p.dozens))} dozen</td>
-                </tr>
-                <tr><td colspan="2" style="border-top:1px dashed #F0E2D2;height:1px;line-height:0;font-size:0;">&nbsp;</td></tr>
+                ${buildItemsRowHtml(p.lineItems)}
                 <tr>
                   <td style="font-weight:600;color:#5C4A6B;font-size:14px;">Needed by</td>
                   <td style="font-size:15px;">${escapeHtml(p.dateNeeded)}</td>
@@ -783,6 +911,7 @@ function buildCustomerEmailHtml(p) {
 function buildCustomerEmailText(p) {
   const totalUsd = `$${(p.totalCents / 100).toFixed(2)}`;
   const firstName = (p.name || 'there').split(' ')[0] || p.name || 'there';
+  const itemLines = buildItemsTextLines(p.lineItems);
   const lines = [
     `Thanks for ordering, ${firstName}!`,
     '',
@@ -790,8 +919,9 @@ function buildCustomerEmailText(p) {
     `Maddie will text or email within 24 hours to confirm design details and lock in your pickup.`,
     '',
     `Order #${p.orderShortId}`,
-    `Tier:      ${p.tierName}`,
-    `Quantity:  ${p.dozens} dozen`,
+    'Items:',
+    ...itemLines,
+    '',
     `Needed by: ${p.dateNeeded}`,
     `Paid:      ${totalUsd}`,
   ];

@@ -1189,6 +1189,100 @@
  .tier-total-amount { font-size: 1.5rem; }
  }
 
+ /* ---------- CUSTOM ADD-ONS PICKER ---------- */
+ /* Lives below the tier picker in the custom-order form. Three optional
+    add-ons (cake pops with flavor dropdown, rice krispies, pretzel rods).
+    Selected add-ons reveal their qty stepper and contribute to the total. */
+ .addons-picker {
+ background: #FFF8F0;
+ border: 1px solid #F0E2D2;
+ border-radius: 16px;
+ padding: 1.25rem;
+ display: grid;
+ gap: 0.75rem;
+ }
+ .addons-picker-heading { display: grid; gap: 0.25rem; }
+ .addons-picker-label {
+ font-family: 'Fraunces', serif;
+ font-size: 1.1rem;
+ font-weight: 700;
+ color: var(--ink);
+ }
+ .addons-picker-hint {
+ color: var(--soft-ink);
+ font-size: 0.85rem;
+ font-weight: 400;
+ font-family: 'DM Sans', sans-serif;
+ font-style: italic;
+ margin-left: 0.25rem;
+ }
+ .addon-row {
+ background: white;
+ border: 2px solid #E8DDD4;
+ border-radius: 14px;
+ padding: 0.85rem 1rem;
+ display: grid;
+ gap: 0.7rem;
+ transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+ }
+ .addon-row.is-active {
+ border-color: var(--hot-pink);
+ background: #FFF5F8;
+ box-shadow: 0 4px 14px rgba(255, 59, 127, 0.10);
+ }
+ .addon-toggle {
+ display: flex;
+ align-items: center;
+ gap: 0.7rem;
+ cursor: pointer;
+ margin: 0;
+ }
+ .addon-check {
+ width: 20px;
+ height: 20px;
+ accent-color: var(--hot-pink);
+ margin: 0;
+ flex-shrink: 0;
+ cursor: pointer;
+ }
+ .addon-name {
+ font-family: 'DM Sans', sans-serif;
+ font-weight: 600;
+ font-size: 0.95rem;
+ color: var(--ink);
+ flex: 1;
+ }
+ .addon-price {
+ font-family: 'Fraunces', serif;
+ font-size: 1rem;
+ font-weight: 700;
+ color: var(--hot-pink);
+ white-space: nowrap;
+ }
+ .addon-controls {
+ display: flex;
+ align-items: center;
+ gap: 0.6rem;
+ flex-wrap: wrap;
+ padding-left: 1.7rem; /* aligns with text past the checkbox */
+ }
+ .addon-flavor {
+ flex: 1;
+ min-width: 140px;
+ width: auto;
+ padding: 0.6rem 0.8rem;
+ font-size: 0.9rem;
+ }
+ .addon-qty-input {
+ /* Inherits from .tier-qty-stepper input — but we add data-key marker
+    so JS can target add-on inputs distinctly from the tier dozens input. */
+ }
+
+ @media (max-width: 600px) {
+ .addon-controls { padding-left: 0; }
+ .addon-flavor { min-width: 0; flex: 1 1 100%; }
+ }
+
  /* ---------- ABOUT STRIP ---------- */
  #about {
  background: var(--blush);
