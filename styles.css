@@ -295,7 +295,7 @@
  .ticker-track {
  display: flex;
  gap: 3rem;
- animation: scroll 30s linear infinite;
+ animation: scroll 18s linear infinite;
  white-space: nowrap;
  font-family: 'Fraunces', serif;
  font-style: italic;

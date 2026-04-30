@@ -40,6 +40,12 @@
 <!-- NAV -->
 <nav>
  <div class="nav-inner">
+ <!-- Hamburger sits at the leftmost position on mobile (top-left convention).
+      It's display:none on desktop, so the desktop layout (logo | links | actions)
+      is unchanged. -->
+ <button class="hamburger" id="hamburger" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="navLinks" onclick="toggleNav()">
+ <span></span><span></span><span></span>
+ </button>
  <a href="#" class="logo">MJ's <span>Sweets</span></a>
  <ul class="nav-links" id="navLinks">
  <li><a href="#shop">Shop Seasonal</a></li>
@@ -52,9 +58,6 @@
  <div class="nav-actions">
  <button class="cart-btn" onclick="openCart()">
  <span aria-hidden="true">🛒</span> <span class="cart-btn-label">Cart</span> <span class="cart-count" id="cartCount">0</span>
- </button>
- <button class="hamburger" id="hamburger" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="navLinks" onclick="toggleNav()">
- <span></span><span></span><span></span>
  </button>
  </div>
  </div>
