@@ -38,6 +38,7 @@
  price: 40,
  holidayDate: '2026-05-10',
  img: "💐",
+ photo: "/mothers_day_dozen.jpg",
  cls: "mothers"
  },
  {
@@ -50,6 +51,7 @@
  priceUnit: "/4 pack",
  holidayDate: '2026-05-10',
  img: "🌸",
+ photo: "/mothers_day_minis.jpg",
  cls: "minis"
  },
  {
@@ -209,6 +211,8 @@
    '/portfolio/wedding/wedding-cookies-gold-monogram.jpg': [1200, 1600],
    '/pretzel_rods.png': [473, 528],
    '/rice_krispies.png': [454, 549],
+   '/mothers_day_dozen.jpg': [1192, 999],
+   '/mothers_day_minis.jpg': [1091, 1315],
  };
 
  // Convert any image path to its WebP variant (e.g., /foo.jpg → /foo.webp).
