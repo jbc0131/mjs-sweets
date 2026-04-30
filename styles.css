@@ -295,7 +295,7 @@
  .ticker-track {
  display: flex;
  gap: 3rem;
- animation: scroll 18s linear infinite;
+ animation: scroll 14s linear infinite;
  white-space: nowrap;
  font-family: 'Fraunces', serif;
  font-style: italic;
@@ -312,7 +312,11 @@
  }
  @keyframes scroll {
  from { transform: translateX(0); }
- to { transform: translateX(-50%); }
+ /* The duplicated content has 2N items but only 2N-1 gaps between them,
+    so a literal -50% translate is short by half a gap (1.5rem). Adding
+    that half-gap manually puts item N+1 exactly where item 1 started,
+    and the loop reset becomes invisible. */
+ to { transform: translateX(calc(-50% - 1.5rem)); }
  }
 
  /* ---------- SECTION HEADERS ---------- */
