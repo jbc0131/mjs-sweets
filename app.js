@@ -51,7 +51,7 @@
  priceUnit: "/4 pack",
  holidayDate: '2026-05-10',
  img: "🌸",
- photo: "/mothers_day_minis.jpg",
+ photo: "/mothers_day_mini.png",
  cls: "minis"
  },
  {
@@ -212,7 +212,7 @@
    '/pretzel_rods.png': [473, 528],
    '/rice_krispies.png': [454, 549],
    '/mothers_day_dozen.jpg': [1192, 999],
-   '/mothers_day_minis.jpg': [1091, 1315],
+   '/mothers_day_mini.png': [447, 558],
  };
 
  // Convert any image path to its WebP variant (e.g., /foo.jpg → /foo.webp).
