@@ -34,7 +34,7 @@
  windowId: 'mothers-day-2026',
  name: "Mother's Day Box",
  cookieLabel: "Mother's Day Cookies",
- desc: "Florals, hearts & 'Best Mom'",
+ desc: "Celebrate Mom with this delightful assortment of 3-inch cookies, featuring beautiful flowers, hearts, and sweet messages like “Best Mom Ever.” A wonderful treat for the whole family to share!",
  price: 40,
  holidayDate: '2026-05-10',
  img: "💐",
@@ -46,7 +46,7 @@
  sku: 'MINI-MD',
  windowId: 'mothers-day-2026',
  name: "Mother's Day Minis",
- desc: "Bite-size beauties",
+ desc: "Brighten her day with our petite, 2-inch flower cookies. Beautifully packaged with a “Happy Mother’s Day” tag, they make the perfect sweet surprise for Mom!",
  price: 6,
  priceUnit: "/4 pack",
  holidayDate: '2026-05-10',
@@ -57,7 +57,7 @@
  {
  id: 5,
  name: "Cake Pops",
- desc: "Pick your flavor",
+ desc: "100x better than big box stores. Pick your flavor!",
  price: 24,
  img: "🍭",
  photo: "/cake_pops.png",
@@ -913,7 +913,7 @@
    document.getElementById('checkoutFormView').hidden = true;
    document.getElementById('checkoutSuccessView').hidden = false;
    document.getElementById('successName').textContent = name.split(' ')[0] || name;
-   document.getElementById('successOrderId').textContent = data.orderId || '—';
+   document.getElementById('successOrderId').textContent = data.orderId || '-';
 
    const link = document.getElementById('successReceiptLink');
    const sandboxNote = document.getElementById('successSandboxNote');
@@ -1487,7 +1487,7 @@
    document.getElementById('customSuccessView').hidden = false;
    const firstName = (customCheckoutCustomer?.name || '').split(' ')[0] || 'there';
    document.getElementById('customSuccessName').textContent = firstName;
-   document.getElementById('customSuccessOrderId').textContent = data.orderId || '—';
+   document.getElementById('customSuccessOrderId').textContent = data.orderId || '-';
 
    // Show the "text Maddie the order ID" fallback ONLY when Maddie's notification
    // email failed. Customer's own confirmation email failure is logged but not

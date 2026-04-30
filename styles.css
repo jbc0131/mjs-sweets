@@ -621,9 +621,9 @@
  }
  .upcoming-grid {
  display: grid;
- grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
- gap: 1rem;
- max-width: 900px;
+ grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+ gap: 0.85rem;
+ max-width: 680px;
  margin: 0 auto;
  }
 
@@ -636,12 +636,12 @@
  opacity: 0.85;
  }
  .product-img-compact {
- height: 100px;
+ height: 72px;
  display: flex;
  align-items: center;
  justify-content: center;
- font-size: 2.5rem;
- border-radius: 24px 24px 0 0;
+ font-size: 1.9rem;
+ border-radius: 18px 18px 0 0;
  filter: grayscale(0.3);
  }
  .product-img-compact.mothers { background: linear-gradient(135deg, #FFD6E0, #FF6B9D); }
@@ -650,22 +650,23 @@
  .product-img-compact.fall { background: linear-gradient(135deg, #FF8C61, #C71F37); }
 
  .product-body-compact {
- padding: 0.9rem 1rem 1.1rem;
+ padding: 0.65rem 0.85rem 0.85rem;
  }
  .product-name-compact {
  font-family: 'Fraunces', serif;
- font-size: 1rem;
+ font-size: 0.9rem;
  font-weight: 600;
- margin-bottom: 0.3rem;
+ margin-bottom: 0.2rem;
  color: var(--ink);
+ line-height: 1.2;
  }
  .product-window-compact {
- font-size: 0.78rem;
+ font-size: 0.72rem;
  color: var(--soft-ink);
  display: flex;
  align-items: center;
  justify-content: center;
- gap: 0.3rem;
+ gap: 0.25rem;
  }
  .product-body { padding: 1.5rem; }
  .product-name {
@@ -902,6 +903,8 @@
  grid-template-columns: 1fr 1.2fr;
  gap: 3rem;
  align-items: start;
+ /* When the nav links jump here via #reserve, leave room for the fixed nav. */
+ scroll-margin-top: 90px;
  }
  /* Pitch column follows scroll so it stays visible while filling the long form,
     eliminating the dead cream space the form column otherwise leaves on the left.
@@ -921,8 +924,84 @@
  color: var(--soft-ink);
  margin-bottom: 1.5rem;
  }
+ .request-pitch-aside { font-size: 0.92rem; }
  .request-pitch .btn-primary {
  margin-right: 0.5rem;
+ }
+ /* "How it works" steps — fills the empty left column with content that
+    earns its place at the moment of payment. White card matches the
+    tier-card visual language used in the form. */
+ .request-steps {
+ list-style: none;
+ margin: 2rem 0 1.25rem;
+ padding: 1.5rem;
+ background: white;
+ border: 2px solid #E8DDD4;
+ border-radius: 16px;
+ display: grid;
+ gap: 1.1rem;
+ }
+ .request-steps li {
+ display: grid;
+ grid-template-columns: 36px 1fr;
+ gap: 0.85rem;
+ align-items: start;
+ }
+ .step-num {
+ width: 36px;
+ height: 36px;
+ border-radius: 50%;
+ background: var(--hot-pink);
+ color: white;
+ font-family: 'Fraunces', serif;
+ font-weight: 700;
+ font-size: 1.05rem;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ flex-shrink: 0;
+ line-height: 1;
+ }
+ .step-name {
+ font-weight: 700;
+ color: var(--ink);
+ font-size: 0.97rem;
+ line-height: 1.25;
+ margin-bottom: 0.2rem;
+ }
+ .step-desc {
+ color: var(--soft-ink);
+ font-size: 0.85rem;
+ line-height: 1.5;
+ }
+ /* Reassurance band beneath the steps. Soft yellow tint = the brand's
+    "trustworthy / homey" accent without competing with the pink CTA. */
+ .request-promise {
+ display: grid;
+ grid-template-columns: auto 1fr;
+ gap: 0.75rem;
+ align-items: start;
+ padding: 0.95rem 1.1rem;
+ background: #FFF8E5;
+ border: 1px solid #F5E5A3;
+ border-radius: 12px;
+ color: var(--soft-ink);
+ font-size: 0.88rem;
+ line-height: 1.5;
+ }
+ .request-promise strong { color: var(--ink); }
+ .request-promise-icon {
+ width: 26px;
+ height: 26px;
+ border-radius: 50%;
+ background: var(--yellow);
+ color: var(--ink);
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ font-weight: 700;
+ font-size: 0.85rem;
+ flex-shrink: 0;
  }
  .text-link {
  color: var(--ink);
@@ -962,7 +1041,7 @@
  outline: none;
  border-color: var(--hot-pink);
  }
- textarea { resize: vertical; min-height: 80px; }
+ textarea { resize: vertical; min-height: 100px; }
  input[type="file"] {
  padding: 0.5rem;
  font-size: 0.85rem;
@@ -1195,24 +1274,6 @@
  .tier-qty-stepper input::-webkit-outer-spin-button,
  .tier-qty-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
  .tier-qty-stepper input:focus { outline: none; }
- .tier-qty-range {
- font-size: 0.82rem;
- color: var(--soft-ink);
- }
- .tier-qty-overflow-hint {
- color: var(--soft-ink);
- font-size: 0.78rem;
- line-height: 1.4;
- margin-top: -0.25rem;
- }
- .tier-qty-overflow-hint a {
- color: var(--hot-pink);
- text-decoration: none;
- font-weight: 600;
- border-bottom: 1px solid rgba(255, 59, 127, 0.3);
- }
- .tier-qty-overflow-hint a:hover { border-bottom-color: var(--hot-pink); }
-
  .tier-total-row {
  display: flex;
  justify-content: space-between;
@@ -1277,8 +1338,49 @@
  border-radius: 14px;
  padding: 0.85rem 1rem;
  display: grid;
- gap: 0.7rem;
+ grid-template-columns: 64px 1fr;
+ gap: 0.85rem;
+ align-items: start;
  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+ }
+ /* Inner column that holds the toggle row + qty controls so they stack
+    vertically next to the thumbnail, instead of all 3 stacking row-style. */
+ .addon-row-body {
+ display: grid;
+ gap: 0.7rem;
+ min-width: 0;
+ }
+ /* Add-on thumbnail. Same lightbox behavior as the tier-card-thumb but a bit
+    smaller so the row stays compact. Reuses the .tier-card-thumb-zoom hover hint. */
+ .addon-thumb {
+ width: 64px;
+ height: 64px;
+ border-radius: 10px;
+ overflow: hidden;
+ background: #FFF8F0;
+ padding: 0;
+ border: 0;
+ cursor: zoom-in;
+ position: relative;
+ display: block;
+ flex-shrink: 0;
+ }
+ .addon-thumb img {
+ width: 100%;
+ height: 100%;
+ object-fit: contain;
+ padding: 0.25rem;
+ box-sizing: border-box;
+ display: block;
+ transition: transform 0.25s ease;
+ }
+ .addon-thumb:hover img,
+ .addon-thumb:focus-visible img { transform: scale(1.06); }
+ .addon-thumb:hover .tier-card-thumb-zoom,
+ .addon-thumb:focus-visible .tier-card-thumb-zoom { opacity: 1; }
+ .addon-thumb:focus-visible {
+ outline: 2px solid var(--hot-pink);
+ outline-offset: 2px;
  }
  .addon-row.is-active {
  border-color: var(--hot-pink);
@@ -1403,6 +1505,14 @@
  font-size: 2rem;
  color: var(--hot-pink);
  margin-top: 1rem;
+ }
+ /* Two-CTA pair under Maddie's signature: re-engages visitors who scrolled
+    here looking for a next step instead of forcing a scroll back to nav. */
+ .about-ctas {
+ display: flex;
+ gap: 0.85rem;
+ flex-wrap: wrap;
+ margin-top: 1.5rem;
  }
 
  /* ---------- REVIEWS ---------- */
