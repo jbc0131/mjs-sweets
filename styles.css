@@ -888,7 +888,14 @@
  display: grid;
  grid-template-columns: 1fr 1.2fr;
  gap: 3rem;
- align-items: center;
+ align-items: start;
+ }
+ /* Pitch column follows scroll so it stays visible while filling the long form,
+    eliminating the dead cream space the form column otherwise leaves on the left.
+    Disabled below at the 900px breakpoint where the grid collapses to 1 column. */
+ .request-pitch {
+ position: sticky;
+ top: 6rem;
  }
  .request-pitch h3 {
  font-family: 'Fraunces', serif;
@@ -1045,18 +1052,53 @@
  width: 1px;
  height: 1px;
  }
+ /* Tier thumb is a <button> so it's keyboard-focusable and opens a lightbox.
+    Reset all native button styling, then style as a clickable image tile. */
  .tier-card-thumb {
  width: 88px;
  height: 88px;
  border-radius: 10px;
  overflow: hidden;
  background: #FFF8F0;
+ padding: 0;
+ border: 0;
+ cursor: zoom-in;
+ position: relative;
+ display: block;
  }
  .tier-card-thumb img {
  width: 100%;
  height: 100%;
  object-fit: cover;
  display: block;
+ transition: transform 0.25s ease;
+ }
+ .tier-card-thumb:hover img,
+ .tier-card-thumb:focus-visible img { transform: scale(1.06); }
+ /* Subtle zoom-in cue, only visible on hover/focus to keep the card clean. */
+ .tier-card-thumb-zoom {
+ position: absolute;
+ right: 4px;
+ bottom: 4px;
+ width: 22px;
+ height: 22px;
+ border-radius: 50%;
+ background: rgba(42, 26, 46, 0.78);
+ color: #fff;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ font-size: 0.75rem;
+ line-height: 1;
+ opacity: 0;
+ transition: opacity 0.15s ease;
+ pointer-events: none;
+ }
+ .tier-card-thumb:hover .tier-card-thumb-zoom,
+ .tier-card-thumb:focus-visible .tier-card-thumb-zoom { opacity: 1; }
+ .tier-card-thumb:focus-visible {
+ outline: 2px solid var(--hot-pink);
+ outline-offset: 2px;
  }
  .tier-card-body { display: grid; gap: 0.15rem; min-width: 0; }
  .tier-card-name {
@@ -2195,6 +2237,7 @@
  .section-header { margin-bottom: 2.5rem; }
  .form-row { grid-template-columns: 1fr; }
  .request-box { padding: 2rem 1.5rem; }
+ .request-pitch { position: static; top: auto; }
  .about-photo { max-width: 240px; margin: 0 auto; }
  .about-text h2 { font-size: 2rem; }
 

@@ -1946,6 +1946,25 @@
    img.src = photo.src;
    img.alt = photo.alt;
    document.getElementById('lightboxCaption').textContent = photo.caption;
+   // Hide prev/next nav when there's only one photo in this set (e.g., tier examples).
+   const showNav = lightboxFiltered.length > 1;
+   const prev = document.querySelector('.lightbox-prev');
+   const next = document.querySelector('.lightbox-next');
+   if (prev) prev.style.display = showNav ? '' : 'none';
+   if (next) next.style.display = showNav ? '' : 'none';
+ }
+
+ // Single-photo lightbox opener used by the tier-picker thumbnails. Stops the
+ // click from bubbling up to the wrapping <label>, which would otherwise also
+ // toggle the radio button selection.
+ function openTierLightbox(e, src, alt, caption) {
+   if (e) { e.preventDefault(); e.stopPropagation(); }
+   lightboxFiltered = [{ src: src, alt: alt, caption: caption }];
+   lightboxIndex = 0;
+   showLightboxPhoto();
+   const lb = document.getElementById('lightbox');
+   lb.hidden = false;
+   document.body.style.overflow = 'hidden';
  }
 
  function lightboxNav(dir) {

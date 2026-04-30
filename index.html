@@ -219,9 +219,11 @@
  <div class="tier-grid" role="radiogroup" aria-label="Custom dozen tier">
  <label class="tier-card" data-tier="CUSTOM-SIG-DZN" data-price-cents="4000">
  <input type="radio" name="tier" value="CUSTOM-SIG-DZN" required class="tier-radio" />
- <div class="tier-card-thumb">
+ <button type="button" class="tier-card-thumb" aria-label="View larger example of Signature Custom Dozen"
+   onclick="openTierLightbox(event, '/portfolio/wedding/wedding-cookies-gold-monogram.jpg', 'Example: focused gold monogram custom dozen', 'Here’s an example of our Signature Custom Dozen')">
  <img src="/portfolio/wedding/wedding-cookies-gold-monogram.jpg" alt="Example: focused gold monogram custom dozen" loading="lazy" decoding="async" />
- </div>
+ <span class="tier-card-thumb-zoom" aria-hidden="true">⤢</span>
+ </button>
  <div class="tier-card-body">
  <div class="tier-card-name">Signature Custom Dozen</div>
  <div class="tier-card-price">$40<span class="tier-card-unit">/dz</span></div>
@@ -230,9 +232,11 @@
  </label>
  <label class="tier-card" data-tier="CUSTOM-SHOW-DZN" data-price-cents="4600">
  <input type="radio" name="tier" value="CUSTOM-SHOW-DZN" required class="tier-radio" />
- <div class="tier-card-thumb">
+ <button type="button" class="tier-card-thumb" aria-label="View larger example of Showstopper Custom Dozen"
+   onclick="openTierLightbox(event, '/portfolio/birthdays/birthday-cookies-farm-animals.jpg', 'Example: bold multi-color custom dozen', 'Here’s an example of our Showstopper Custom Dozen')">
  <img src="/portfolio/birthdays/birthday-cookies-farm-animals.jpg" alt="Example: bold multi-color custom dozen" loading="lazy" decoding="async" />
- </div>
+ <span class="tier-card-thumb-zoom" aria-hidden="true">⤢</span>
+ </button>
  <div class="tier-card-body">
  <div class="tier-card-name">Showstopper Custom Dozen</div>
  <div class="tier-card-price">$46<span class="tier-card-unit">/dz</span></div>
