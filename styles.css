@@ -367,6 +367,11 @@
  scroll-margin-top: 100px;
  outline: 3px solid transparent;
  outline-offset: 4px;
+ /* Flex column so the body can grow to fill the grid-cell height,
+    keeping the price/Add row aligned across cards regardless of
+    description length. */
+ display: flex;
+ flex-direction: column;
  }
  .product-card.is-spotlight {
  outline-color: var(--hot-pink);
@@ -668,7 +673,17 @@
  justify-content: center;
  gap: 0.25rem;
  }
- .product-body { padding: 1.5rem; }
+ .product-body {
+ padding: 1.5rem;
+ display: flex;
+ flex-direction: column;
+ flex: 1;
+ }
+ /* Window-status pill (e.g., "Order by May 6 for pickup") gets margin-top:
+    auto so it floats to the bottom of the body, dragging the price row
+    with it. Any extra vertical space lands between the description and
+    the pill, keeping the call-to-action group locked to the card bottom. */
+ .product-body .product-window { margin-top: auto; }
  .product-name {
  font-family: 'Fraunces', serif;
  font-size: 1.4rem;
