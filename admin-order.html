@@ -78,14 +78,15 @@
     .next-step-cta .nsc-button:hover { filter: brightness(1.08); }
     .next-step-cta .nsc-button:disabled { opacity: 0.5; cursor: wait; }
 
-    /* Collapsible photo gallery uses native <details> */
-    details.photos-collapsible { background: white; border-radius: 10px; }
-    details.photos-collapsible summary { cursor: pointer; padding: 10px 14px; font-weight: 600; font-size: 14px; color: var(--text); list-style: none; background: var(--cream); border-radius: 10px; user-select: none; display: flex; align-items: center; gap: 6px; }
-    details.photos-collapsible summary::-webkit-details-marker { display: none; }
-    details.photos-collapsible summary::before { content: '▶'; font-size: 10px; color: var(--muted); transition: transform 0.2s ease; display: inline-block; }
-    details.photos-collapsible[open] summary::before { transform: rotate(90deg); }
-    details.photos-collapsible[open] summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
-    details.photos-collapsible .photo-grid { padding: 12px; }
+    /* Generic collapsible — uses native <details>/<summary> */
+    details.collapsible { background: white; border-radius: 10px; }
+    details.collapsible summary { cursor: pointer; padding: 10px 14px; font-weight: 600; font-size: 14px; color: var(--text); list-style: none; background: var(--cream); border-radius: 10px; user-select: none; display: flex; align-items: center; gap: 6px; }
+    details.collapsible summary::-webkit-details-marker { display: none; }
+    details.collapsible summary::before { content: '▶'; font-size: 10px; color: var(--muted); transition: transform 0.2s ease; display: inline-block; }
+    details.collapsible[open] summary::before { transform: rotate(90deg); }
+    details.collapsible[open] summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+    details.collapsible .collapsible-body { padding: 12px 14px; }
+    details.collapsible .photo-grid { padding: 12px; }
 
     .side-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border); }
     .terminal-banner { background: var(--cream); padding: 16px 18px; border-radius: 14px; border-left: 4px solid var(--success); font-size: 14px; }
@@ -244,8 +245,8 @@
           ${!p.hidden ? `<button class="delete-btn" onclick="confirmDeletePhoto('${escapeHtml(p.url)}')" aria-label="Hide photo">×</button>` : ''}
         </div>`).join('');
       const photosHtml = totalPhotosCount === 0
-        ? '<p style="color:var(--muted);font-size:13px;margin:0;">No photos sent yet. Upload some via the journey above.</p>'
-        : `<details class="photos-collapsible">
+        ? '<p style="color:var(--muted);font-size:13px;margin:0;">No photos sent yet.</p>'
+        : `<details class="collapsible">
              <summary>📸 Photos sent (${photosCount}${photosCount !== totalPhotosCount ? ` · ${totalPhotosCount - photosCount} hidden` : ''})</summary>
              <div class="photo-grid">${photosGridHtml}</div>
            </details>`;
@@ -368,8 +369,8 @@
       })();
 
       // Destructive actions (Flag No-Show + Cancel & Refund) live in their
-      // own section at the bottom of the page — visually separated from the
-      // happy-path journey so they're not clicked accidentally.
+      // own section at the bottom of the page, collapsed by default so
+      // they're not clicked accidentally.
       const dangerZone = (() => {
         if (terminal) return ''; // already in a terminal state — no actions to surface
         const buttons = [];
@@ -379,9 +380,13 @@
         buttons.push('<button class="danger" onclick="cancelOrder()">✗ Cancel & Refund</button>');
         return `
           <div class="section">
-            <h2 style="color:var(--muted);font-size:14px;text-transform:uppercase;letter-spacing:1px;">Danger zone</h2>
-            <p style="font-size:13px;color:var(--muted);margin:0 0 12px;">These actions affect billing or close the order. They send the customer an email.</p>
-            <div class="side-actions" style="border-top:0;margin-top:0;padding-top:0;">${buttons.join('')}</div>
+            <details class="collapsible">
+              <summary>Cancel and Refund</summary>
+              <div class="collapsible-body">
+                <p style="font-size:13px;color:var(--muted);margin:0 0 12px;">These actions affect billing or close the order. They send the customer an email.</p>
+                <div class="side-actions" style="border-top:0;margin-top:0;padding-top:0;">${buttons.join('')}</div>
+              </div>
+            </details>
           </div>`;
       })();
 
@@ -412,7 +417,6 @@
           <div class="section">
             <h2>Photos</h2>
             ${photosHtml}
-            <p style="font-size:12px;color:var(--muted);margin:8px 0 0;">Upload new photos via the journey section above — that way the customer gets an email with the photos as you upload them. Existing photos can be hidden via the × button (hidden photos stay in already-sent emails but disappear from the customer's tracking page).</p>
           </div>
           ${o.pickupAddress || o.pickupDate ? `
             <div class="section">
@@ -427,8 +431,10 @@
             ${sentHtml}
             <h3 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px;">Coming up</h3>
             ${expectedHtml}
-            <h3 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px;">Won't fire</h3>
-            ${wontHtml}
+            <details class="collapsible" style="margin-top:14px;">
+              <summary>Won't fire (${currentWontFire.length})</summary>
+              <div class="collapsible-body">${wontHtml}</div>
+            </details>
           </div>
           ${dangerZone}
         </div>`;
