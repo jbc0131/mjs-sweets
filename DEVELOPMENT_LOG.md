@@ -4,6 +4,48 @@ Chronological record of significant work. Most recent at top.
 
 ---
 
+## 2026-05-05 — Square Customer Directory population
+
+Both checkout endpoints (`api/checkout.js`, `api/contact.js`) now create a proper Square Customer Directory record for every paying buyer, not just a Payment-level `buyerEmailAddress` (which Square treats as a receipt destination, not as "the customer provided their info to you"). Empty Customer Directory in production was the symptom.
+
+### What changed
+
+New shared helper at `api/_lib/squareCustomer.js` exporting `ensureCustomer(square, { name, email, phone, parentIdempotencyKey })`. The helper:
+
+- Searches the Directory by exact email match. If found, returns the existing `customerId` unchanged (does NOT update name/phone — respects manual dashboard edits).
+- If not found, creates a new Customer with `givenName` + `familyName` (best-effort split: first word vs. rest), `emailAddress`, and an E.164-normalized `phoneNumber` (US-only by design — 10 digits → `+1XXXXXXXXXX`, 11 starting with 1 → `+XXXXXXXXXXX`, anything else omitted from the record).
+- Uses `${parentIdempotencyKey}-cust` as the createCustomer idempotency key so retried POSTs collapse to one Customer record.
+- Returns `null` (not a throw) on any non-fatal Square API failure — best-effort upstream of the charge. Customer Directory is observability/marketing infrastructure; its unavailability must never block a sale.
+
+Each endpoint now calls `ensureCustomer` immediately before `createOrder` and conditionally attaches `customerId` via spread:
+
+```js
+order: {
+  locationId: process.env.SQUARE_LOCATION_ID,
+  ...(customerId && { customerId }),
+  lineItems,
+  metadata: { ... },
+}
+```
+
+`api/checkout.js` was also tightened to derive ALL three idempotency keys from one `randomUUID()` parent (`-cust`, no-suffix for order, `-pay` for payment), matching the convention `api/contact.js` already uses. Previously checkout's order and payment used independent UUIDs.
+
+### Constraint coupling worth knowing
+
+`api/contact.js` validates the client-supplied `idempotencyKey` length at ≤ 39 (was 40). The 39-char ceiling is **load-bearing**: with the `-cust` derivation it pins the customer-create key to ≤ 44, one under Square's 45-char cap. Inline comment at the validation site flags this; comment in `squareCustomer.js` mirrors it. Don't loosen one without the other.
+
+### Why "search-then-create" instead of "create-with-conflict-check"
+
+Square's Customers API has no "create or return existing" endpoint. The two-call dance (search → create if missing) has a theoretical race where two concurrent first-time orders for the same email both fail the search and both create. Different parent idempotency keys → two records. Per-order key was chosen anyway over a hash-of-email approach because: (a) MJ's volume makes the race essentially nonexistent, (b) per-order keys preserve request correlation in logs, (c) hash-of-email risks long-lived idempotency-key collisions across unrelated future orders if Square's idempotency window is wider than expected. If a duplicate ever does happen, Maddie merges in the dashboard.
+
+### Verification before declaring this fully shipped
+
+- [ ] After deploy, `curl -I https://www.mjs-sweets.com/api/_lib/squareCustomer` should return 404 (file should not be deployed as a Vercel function — the underscore prefix is Vercel's documented convention for non-route helpers, but worth confirming once).
+- [ ] First test order via the live site → Square dashboard → Customers → Directory should show a new entry with name, email, and phone.
+- [ ] Second order from the same email → no dupe; existing entry's order count increments.
+
+---
+
 ## 2026-04-27 — Paid custom-order flow
 
 The custom-order form was upgraded from "submit free inquiry" to "pay upfront to reserve." Spec lives in `CUSTOM_ORDER_PLAN.md`; build was executed in 5 phases plus a planning + review pre-phase.

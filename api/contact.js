@@ -31,6 +31,7 @@ const { put } = require('@vercel/blob');
 const { Client, Environment, ApiError } = require('square');
 const { RestClient } = require('@signalwire/compatibility-api');
 const { Resend } = require('resend');
+const { ensureCustomer } = require('./_lib/squareCustomer');
 
 // ---- Limits ----
 const MAX_PHOTOS = 5;
@@ -259,7 +260,11 @@ async function handler(req, res) {
   }
 
   // Square idempotency keys are capped at 45 chars. UUIDv4 is 36 chars.
-  if (!idempotencyKey || idempotencyKey.length < 8 || idempotencyKey.length > 40) {
+  // The 39-char ceiling here is LOAD-BEARING: the squareCustomer helper derives
+  // `${idempotencyKey}-cust` (5 extra chars) for the createCustomer call, so the
+  // parent must stay ≤ 39 to keep the derived key ≤ 44 (one under Square's 45
+  // cap). Don't loosen without updating api/_lib/squareCustomer.js.
+  if (!idempotencyKey || idempotencyKey.length < 8 || idempotencyKey.length > 39) {
     return res.status(400).json({
       error: 'Missing or malformed idempotency key',
       detail: 'Please refresh the page and try again.',
@@ -442,15 +447,29 @@ async function handler(req, res) {
     totalCents += sub;
   }
 
+  // ---- Ensure Customer Directory record (best-effort, never blocks charge) ----
+  // Failure here returns null and we proceed without `customerId`. Customer
+  // Directory is observability / marketing infrastructure — its unavailability
+  // must never break a sale. Runs AFTER blob upload (photos already orphan-
+  // acceptable on charge failure) and BEFORE createOrder so the order can
+  // attach to the Customer record on success.
+  const customerId = await ensureCustomer(square, {
+    name,
+    email,
+    phone,
+    parentIdempotencyKey: idempotencyKey,
+  });
+
   // ---- Create Square Order + Charge ----
   // Both calls use idempotency keys derived from the client-provided UUID,
-  // so a retried POST collapses to one Order + one Payment.
+  // so a retried POST collapses to one Order + one Payment + one Customer.
   let orderId, paymentId, receiptUrl;
   try {
     const orderRes = await square.ordersApi.createOrder({
       idempotencyKey: idempotencyKey,
       order: {
         locationId: process.env.SQUARE_LOCATION_ID,
+        ...(customerId && { customerId }),
         lineItems: orderLineItems,
         metadata: {
           source: 'mjssweets-website',

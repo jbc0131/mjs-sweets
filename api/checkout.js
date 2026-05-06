@@ -18,6 +18,7 @@
 
 const { Client, Environment, ApiError } = require('square');
 const { randomUUID } = require('crypto');
+const { ensureCustomer } = require('./_lib/squareCustomer');
 
 const square = new Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
@@ -168,11 +169,30 @@ module.exports = async function handler(req, res) {
       };
     });
 
+    // ---- Idempotency keys ----
+    // Single parent UUID derives the order key + payment key + customer key,
+    // so a retried POST collapses to one Order, one Payment, AND one Customer.
+    // Suffix lengths are chosen to fit Square's 45-char idempotency cap (UUIDv4
+    // is 36 chars; "-pay" / "-cust" leave plenty of room).
+    const idempotencyKey = randomUUID();
+
+    // ---- Ensure Customer Directory record (best-effort, never blocks charge) ----
+    // Failure here returns null and we proceed without `customerId`. Square
+    // Customer Directory is observability / marketing infrastructure — its
+    // unavailability must never break a sale.
+    const customerId = await ensureCustomer(square, {
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      parentIdempotencyKey: idempotencyKey,
+    });
+
     // ---- Create order ----
     const orderRes = await square.ordersApi.createOrder({
-      idempotencyKey: randomUUID(),
+      idempotencyKey,
       order: {
         locationId: process.env.SQUARE_LOCATION_ID,
+        ...(customerId && { customerId }),
         lineItems,
         metadata: {
           pickup_window: String(pickupWindow || ''),
@@ -186,7 +206,7 @@ module.exports = async function handler(req, res) {
 
     // ---- Charge ----
     const paymentRes = await square.paymentsApi.createPayment({
-      idempotencyKey: randomUUID(),
+      idempotencyKey: `${idempotencyKey}-pay`,
       sourceId: paymentToken,
       amountMoney: {
         amount: BigInt(totalCents),
