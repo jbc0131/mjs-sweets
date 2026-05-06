@@ -5,6 +5,7 @@
 // path so the response doesn't reveal which dimension matched.
 
 const { Client, Environment } = require('square');
+const { list } = require('@vercel/blob');
 const { setOrderCookieHeader } = require('./_lib/order-auth');
 
 const square = new Client({
@@ -45,6 +46,23 @@ function looksLikePhone(input) {
   return digits.length === 10 || (digits.length === 11 && digits.startsWith('1'));
 }
 
+// The confirmation email shows `Order #${orderId.slice(0, 8)}` for readability,
+// but the full Square order ID is ~27 chars. If the customer pastes the short
+// version from their email, expand it to the full ID via Blob prefix lookup.
+// Returns the full ID on unique match; otherwise returns the input unchanged
+// (downstream Square retrieveOrder will fail and the user sees a generic error).
+async function expandShortOrderId(orderId) {
+  if (!orderId || orderId.length >= 20) return orderId;
+  try {
+    const blobs = await list({ prefix: 'orders/' + orderId, token: process.env.BLOB_READ_WRITE_TOKEN });
+    const matches = (blobs.blobs || [])
+      .filter(b => b.pathname.endsWith('.json') && !b.pathname.endsWith('_email-index.json'))
+      .map(b => b.pathname.replace(/^orders\//, '').replace(/\.json$/, ''));
+    if (matches.length === 1) return matches[0];
+  } catch (_) { /* fall through */ }
+  return orderId;
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -53,10 +71,13 @@ module.exports = async function handler(req, res) {
     return res.status(429).json({ error: 'Too many attempts. Try again in a few minutes.' });
   }
 
-  const { lookup, orderId } = req.body || {};
-  if (!lookup || !orderId) {
+  const { lookup, orderId: rawOrderId } = req.body || {};
+  if (!lookup || !rawOrderId) {
     return res.status(400).json({ error: "Please enter both your name (or phone) and order number." });
   }
+
+  // Expand 8-char prefix (as shown in the email subject) to full order ID.
+  const orderId = await expandShortOrderId(String(rawOrderId).trim());
 
   try {
     const r = await square.ordersApi.retrieveOrder(orderId);

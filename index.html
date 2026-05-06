@@ -794,7 +794,9 @@ async function submitTrackOrder(e) {
     });
     const data = await r.json().catch(() => ({}));
     if (r.ok && data.ok) {
-      location.assign(`/order/${encodeURIComponent(orderId)}`);
+      // Server may have expanded a short prefix to the full ID; use what it returned.
+      const targetId = data.orderId || orderId;
+      location.assign(`/order/${encodeURIComponent(targetId)}`);
       return;
     }
     errBox.textContent = data.error || 'Could not verify those details.';
