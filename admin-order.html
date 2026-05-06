@@ -34,6 +34,53 @@
     button.success { background: var(--success); color: white; border: 0; padding: 11px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; cursor: pointer; }
     button:disabled { opacity: 0.5; cursor: wait; }
     .pipe { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    /* === Pizza-tracker style horizontal journey === */
+    .tracker-wrap { padding: 8px 0 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .tracker { display: flex; align-items: flex-start; min-width: max-content; gap: 0; padding: 4px 6px 8px; }
+    .tracker-stage { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; min-width: 76px; cursor: pointer; user-select: none; transition: transform 0.15s ease; }
+    .tracker-stage:hover { transform: translateY(-2px); }
+    .tracker-stage:disabled { cursor: default; }
+    .tracker-stage:focus { outline: none; }
+    .tracker-row { display: flex; align-items: center; }
+    .tracker-icon {
+      width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 26px; background: white; border: 3px solid var(--border); color: var(--muted);
+      transition: all 0.25s ease; position: relative;
+    }
+    .tracker-bar { width: 28px; height: 4px; background: var(--border); transition: background 0.3s ease; align-self: center; }
+    .tracker-stage.done .tracker-icon { background: var(--success); border-color: var(--success); color: white; }
+    .tracker-bar.done { background: var(--success); }
+    .tracker-stage.current .tracker-icon {
+      background: linear-gradient(135deg, #FF6B9D, #FF3B7F); border-color: var(--pink); color: white;
+      box-shadow: 0 0 0 5px rgba(255, 59, 127, 0.18), 0 4px 12px rgba(255, 59, 127, 0.35);
+      animation: tracker-pulse 2.2s ease-in-out infinite;
+    }
+    @keyframes tracker-pulse {
+      0%, 100% { box-shadow: 0 0 0 5px rgba(255, 59, 127, 0.18), 0 4px 12px rgba(255, 59, 127, 0.35); }
+      50%      { box-shadow: 0 0 0 10px rgba(255, 59, 127, 0.05), 0 4px 12px rgba(255, 59, 127, 0.35); }
+    }
+    .tracker-stage.canceled .tracker-icon { background: var(--error); border-color: var(--error); color: white; }
+    .tracker-stage.no-show .tracker-icon { background: var(--warn); border-color: var(--warn); color: white; }
+    .tracker-label { font-size: 11.5px; font-weight: 600; text-align: center; margin-top: 8px; color: var(--text); line-height: 1.25; max-width: 76px; }
+    .tracker-stage.future .tracker-label { color: var(--muted); font-weight: 500; }
+    .tracker-stage.current .tracker-label { color: var(--pink); }
+    .tracker-time { font-size: 10.5px; color: var(--muted); margin-top: 2px; text-align: center; }
+    .tracker-stage.current .tracker-time { color: var(--pink); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .next-step-cta { margin-top: 18px; padding: 16px; border-radius: 14px; background: var(--cream); display: flex; flex-direction: column; gap: 10px; }
+    .next-step-cta .nsc-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; }
+    .next-step-cta .nsc-explainer { font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .next-step-cta .nsc-button { padding: 14px 18px; border-radius: 999px; font-size: 15px; font-weight: 700; cursor: pointer; border: 0; background: var(--pink); color: white; transition: filter 0.15s ease; }
+    .next-step-cta .nsc-button.success { background: var(--success); }
+    .next-step-cta .nsc-button:hover { filter: brightness(1.08); }
+    .next-step-cta .nsc-button:disabled { opacity: 0.5; cursor: wait; }
+
+    .side-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border); }
+    .terminal-banner { background: var(--cream); padding: 16px 18px; border-radius: 14px; border-left: 4px solid var(--success); font-size: 14px; }
+    .terminal-banner.canceled { border-left-color: var(--error); }
+    .terminal-banner.no-show { border-left-color: var(--warn); }
+    .terminal-banner h3 { margin: 0 0 4px; font-family: Georgia, serif; font-size: 16px; }
     .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
     .photo-thumb { position: relative; border-radius: 10px; overflow: hidden; background: var(--cream); }
     .photo-thumb img { display: block; width: 100%; height: auto; }
@@ -203,19 +250,106 @@
       const wontHtml = currentWontFire.length === 0 ? '<p style="color:var(--muted);font-size:13px;margin:0;">— none —</p>'
         : currentWontFire.map(e => `<div class="wontfire">⚪ <strong>${escapeHtml(e.label)}</strong> · <span style="font-size:12px;">${escapeHtml(e.condition)}</span></div>`).join('');
 
-      // Status pipeline buttons
-      const advanceBtns = !terminal ? `
-        ${o.status === 'paid' ? '<button class="secondary" onclick="advance(\'confirmed\')">→ Confirmed</button>' : ''}
-        ${o.status === 'confirmed' ? '<button class="secondary" onclick="advance(\'baking\')">→ Baking</button>' : ''}
-        ${o.status === 'baking' ? '<button class="secondary" onclick="advance(\'decorating\')">→ Decorating</button>' : ''}
-        ${['confirmed','baking','decorating'].includes(o.status) ? '<button class="success" onclick="openReadyModal()">Mark Ready (with email)</button>' : ''}
-        ${o.status === 'ready' ? '<button class="success" onclick="markPickedUp()">Mark Picked Up (with email)</button>' : ''}
-        ${o.status === 'ready' ? '<button class="secondary" onclick="confirmNoShow()">Flag No-Show</button>' : ''}
-      ` : '';
+      // ---- Pizza-tracker style journey ----
+      const STAGES = [
+        { key: 'paid',       label: 'Order placed',  icon: '💸', desc: 'Customer paid · receipt + confirmation email sent automatically' },
+        { key: 'confirmed',  label: 'Confirmed',     icon: '👍', desc: 'You acknowledged you can take this order — no auto email' },
+        { key: 'baking',     label: 'Baking',        icon: '🥄', desc: 'Mixing, baking, cooling — no auto email' },
+        { key: 'decorating', label: 'Decorating',    icon: '✨', desc: 'Royal icing, sprinkles, the fun part — no auto email' },
+        { key: 'ready',      label: 'Ready',         icon: '🎁', desc: '📧 Auto-emails the customer with pickup details and address' },
+        { key: 'picked-up',  label: 'Picked up',     icon: '🎉', desc: '📧 Auto-emails a thank-you and review request' },
+      ];
 
-      const dangerBtns = !terminal ? `
-        <button class="danger" onclick="cancelOrder()" style="margin-top:8px;">Cancel & refund</button>
-      ` : (isCanceled ? `<div class="ok">Canceled · refund email sent</div>` : '');
+      function tsForStage(key) {
+        const e = (o.statusHistory || []).find(s => s.status === key);
+        return e ? e.ts : null;
+      }
+
+      const currentIdx = isCanceled || isNoShow
+        ? STAGES.findIndex(s => s.key === (isCanceled ? 'canceled' : 'no-show'))
+        : Math.max(0, STAGES.findIndex(s => s.key === o.status));
+
+      // Build the tracker row
+      const trackerHtml = (() => {
+        const cells = [];
+        STAGES.forEach((s, i) => {
+          let cls = 'future';
+          if (isCanceled || isNoShow) {
+            // Side state — keep all stages neutral except those that fired
+            cls = tsForStage(s.key) ? 'done' : 'future';
+          } else if (i < currentIdx) cls = 'done';
+          else if (i === currentIdx) cls = 'current';
+
+          const ts = tsForStage(s.key);
+          const timeLabel = cls === 'current' ? 'Current'
+            : ts ? new Date(ts).toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric' })
+            : '';
+
+          // Click handler decides per stage
+          const onclickJs = `clickStage('${s.key}')`;
+          cells.push(`
+            <button type="button" class="tracker-stage ${cls}" onclick="${onclickJs}" data-stage="${s.key}">
+              <div class="tracker-icon">${s.icon}</div>
+              <div class="tracker-label">${escapeHtml(s.label)}</div>
+              <div class="tracker-time">${escapeHtml(timeLabel)}</div>
+            </button>
+          `);
+          if (i < STAGES.length - 1) {
+            const barCls = (cls === 'done' || (cls === 'current' && i < STAGES.length - 1)) ? '' : '';
+            const barDone = (i < currentIdx) ? 'done' : '';
+            cells.push(`<div class="tracker-bar ${barDone}"></div>`);
+          }
+        });
+        return `<div class="tracker-wrap"><div class="tracker">${cells.join('')}</div></div>`;
+      })();
+
+      // Contextual "Next step" CTA
+      const nextStepCta = (() => {
+        if (isCanceled) return '';
+        if (isNoShow) return '';
+        if (o.status === 'picked-up') return `
+          <div class="terminal-banner">
+            <h3>🎉 Order complete</h3>
+            <div>Customer was emailed a thank-you. Post-pickup review request will fire automatically ~24 hours after the Picked Up stamp.</div>
+          </div>`;
+
+        const next = STAGES[currentIdx + 1];
+        if (!next) return '';
+        let action = '', label = '', explainer = '', btnClass = '';
+        if (next.key === 'confirmed' || next.key === 'baking' || next.key === 'decorating') {
+          action = `advance('${next.key}')`;
+          label = `${next.icon}  Mark ${next.label}`;
+          explainer = `Silent advance — ${next.label.toLowerCase()} doesn't auto-email the customer. Use Send Update separately if you want to share progress photos.`;
+        } else if (next.key === 'ready') {
+          action = `openReadyModal()`;
+          label = `${next.icon}  Mark Ready for pickup`;
+          explainer = `You'll set the pickup date next. Customer is automatically emailed with pickup details.`;
+          btnClass = 'success';
+        } else if (next.key === 'picked-up') {
+          action = `markPickedUp()`;
+          label = `${next.icon}  Mark Picked Up`;
+          explainer = `Customer is automatically emailed a thank-you and Facebook review request.`;
+          btnClass = 'success';
+        }
+
+        return `
+          <div class="next-step-cta">
+            <div class="nsc-label">Next step</div>
+            <div class="nsc-explainer">${escapeHtml(explainer)}</div>
+            <button class="nsc-button ${btnClass}" onclick="${action}" id="nextStepBtn">${label}</button>
+          </div>`;
+      })();
+
+      const dangerBtns = (() => {
+        if (isCanceled) return `<div class="terminal-banner canceled"><h3>✗ Canceled</h3><div>Refund-confirmation email was sent. The order is closed.</div></div>`;
+        if (isNoShow) return `<div class="terminal-banner no-show"><h3>⚠️ No-show</h3><div>"Did we miss you?" email was sent. Check in with the customer if you want to reschedule.</div></div>`;
+        const buttons = [];
+        if (o.status === 'ready' || o.status === 'picked-up') {
+          buttons.push('<button class="secondary" onclick="confirmNoShow()">⚠️ Flag No-Show</button>');
+        }
+        buttons.push('<button class="danger" onclick="cancelOrder()">✗ Cancel & Refund</button>');
+        return `<div class="side-actions">${buttons.join('')}</div>`;
+      })();
 
       document.getElementById('root').innerHTML = `
         <div class="card">
@@ -236,8 +370,9 @@
             ${o.flow === 'custom-order' && o.vision ? `<div style="margin-top:14px;"><div class="label-text" style="font-size:13px;">Vision</div><div style="background:var(--cream);padding:10px 14px;border-radius:10px;white-space:pre-wrap;font-size:14px;">${escapeHtml(o.vision)}</div></div>` : ''}
           </div>
           <div class="section">
-            <h2>Status pipeline</h2>
-            <div class="pipe">${advanceBtns || '<span style="color:var(--muted);font-size:13px;">No further actions — order is in a terminal state.</span>'}</div>
+            <h2>Order journey</h2>
+            ${trackerHtml}
+            ${nextStepCta}
             ${dangerBtns}
           </div>
           <div class="section">
@@ -366,6 +501,46 @@
         body: JSON.stringify({ status }), credentials: 'include',
       });
       if (r.ok) await load(); else alert('Failed to advance status.');
+    }
+
+    // Tracker stage click — figures out the right action based on which
+    // stage was tapped vs. where the order currently is.
+    async function clickStage(stageKey) {
+      if (!currentOrder) return;
+      const cur = currentOrder.status;
+      const SILENT = ['confirmed', 'baking', 'decorating'];
+      if (stageKey === cur) return; // already there
+
+      // Forward-jump to a stage that triggers an email — use its dedicated flow
+      if (stageKey === 'ready') {
+        if (cur === 'picked-up' || cur === 'canceled') {
+          if (!confirm("Move this order back to Ready? The customer was already past this stage.")) return;
+          await advance('ready');
+          return;
+        }
+        openReadyModal();
+        return;
+      }
+      if (stageKey === 'picked-up') {
+        markPickedUp();
+        return;
+      }
+      // Forward jump to silent stages OR backward jump to any silent stage
+      if (SILENT.includes(stageKey)) {
+        // Find current index
+        const order = ['paid','confirmed','baking','decorating','ready','picked-up'];
+        const curIdx = order.indexOf(cur);
+        const tgtIdx = order.indexOf(stageKey);
+        if (tgtIdx < curIdx) {
+          if (!confirm(`Move this order back to ${stageKey}? Past stages stay logged in history.`)) return;
+        }
+        await advance(stageKey);
+        return;
+      }
+      if (stageKey === 'paid') {
+        // No reason to move back to paid
+        return;
+      }
     }
 
     // Mark Ready
