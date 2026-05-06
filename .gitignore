@@ -26,3 +26,5 @@ build/
 
 # Claude Code local settings (per-developer overrides; settings.json IS committed)
 .claude/settings.local.json
+.env*.local
+MJs Sweets/

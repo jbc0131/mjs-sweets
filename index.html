@@ -54,6 +54,7 @@
  <li><a href="#reserve">Design Yours</a></li>
  <li><a href="#reviews">Reviews</a></li>
  <li><a href="#faq">FAQ</a></li>
+ <li><a href="#" onclick="openTrackOrder(event)">Track Order</a></li>
  </ul>
  <div class="nav-actions">
  <button class="cart-btn" onclick="openCart()">
@@ -739,6 +740,79 @@
  </div>
  </div>
 </div>
+
+<!-- TRACK ORDER MODAL -->
+<div class="checkout-modal" id="trackOrderModal" role="dialog" aria-modal="true" aria-labelledby="trackOrderTitle" hidden style="display:none;">
+ <div class="checkout-overlay" onclick="closeTrackOrder()"></div>
+ <div class="checkout-panel" role="document" style="max-width:480px;">
+   <button class="checkout-close" type="button" onclick="closeTrackOrder()" aria-label="Close">✕</button>
+   <h2 id="trackOrderTitle" style="margin:0 0 8px;font-family:Georgia,serif;">Track your order</h2>
+   <p style="color:#5C4A6B;font-size:14px;margin:0 0 16px;">Enter your last name (or phone) and order number. You'll find the order number in your confirmation email.</p>
+   <form id="trackOrderForm" onsubmit="submitTrackOrder(event)">
+     <div style="margin-bottom:12px;">
+       <label for="trackLookup" style="display:block;font-size:13px;color:#5C4A6B;margin-bottom:4px;">Last name or phone</label>
+       <input id="trackLookup" type="text" required autocomplete="off" style="width:100%;padding:12px;border:1px solid #F0E2D2;border-radius:10px;font-size:16px;" />
+     </div>
+     <div style="margin-bottom:12px;">
+       <label for="trackOrderId" style="display:block;font-size:13px;color:#5C4A6B;margin-bottom:4px;">Order number</label>
+       <input id="trackOrderId" type="text" required autocomplete="off" placeholder="e.g. Vrvg4P5UswEe3..." style="width:100%;padding:12px;border:1px solid #F0E2D2;border-radius:10px;font-size:16px;" />
+     </div>
+     <div id="trackOrderError" style="color:#E57373;font-size:13px;margin-bottom:10px;display:none;"></div>
+     <button type="submit" id="trackOrderSubmit" style="width:100%;background:#FF3B7F;color:white;border:0;padding:14px;border-radius:999px;font-weight:600;font-size:15px;cursor:pointer;">Track order →</button>
+   </form>
+ </div>
+</div>
+
+<script>
+function openTrackOrder(e) {
+  if (e) e.preventDefault();
+  const m = document.getElementById('trackOrderModal');
+  m.hidden = false; m.style.display = 'flex';
+  // Pre-fill from ?track= query param if present
+  const params = new URLSearchParams(location.search);
+  const tk = params.get('track');
+  if (tk) document.getElementById('trackOrderId').value = tk;
+  setTimeout(() => document.getElementById('trackLookup').focus(), 50);
+}
+function closeTrackOrder() {
+  const m = document.getElementById('trackOrderModal');
+  m.hidden = true; m.style.display = 'none';
+  document.getElementById('trackOrderError').style.display = 'none';
+}
+async function submitTrackOrder(e) {
+  e.preventDefault();
+  const lookup = document.getElementById('trackLookup').value.trim();
+  const orderId = document.getElementById('trackOrderId').value.trim();
+  const errBox = document.getElementById('trackOrderError');
+  const btn = document.getElementById('trackOrderSubmit');
+  errBox.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'Verifying…';
+  try {
+    const r = await fetch('/api/order-verify', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lookup, orderId }), credentials: 'include',
+    });
+    const data = await r.json().catch(() => ({}));
+    if (r.ok && data.ok) {
+      location.assign(`/order/${encodeURIComponent(orderId)}`);
+      return;
+    }
+    errBox.textContent = data.error || 'Could not verify those details.';
+    errBox.style.display = 'block';
+  } catch (_) {
+    errBox.textContent = 'Network issue. Try again.';
+    errBox.style.display = 'block';
+  }
+  btn.disabled = false; btn.textContent = 'Track order →';
+}
+// Auto-open if ?track= is present on landing
+(function() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('track')) {
+    window.addEventListener('DOMContentLoaded', () => openTrackOrder());
+  }
+})();
+</script>
 
 <!-- LIGHTBOX (portfolio photo viewer) -->
 <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer" hidden onclick="closeLightbox()">

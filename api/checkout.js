@@ -18,7 +18,9 @@
 
 const { Client, Environment, ApiError } = require('square');
 const { randomUUID } = require('crypto');
-const { ensureCustomer } = require('./_lib/squareCustomer');
+const { ensureCustomer, splitName } = require('./_lib/squareCustomer');
+const { writeOrder } = require('./_lib/order-storage');
+const { sendEmail } = require('./_lib/email');
 
 const square = new Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
@@ -216,6 +218,46 @@ module.exports = async function handler(req, res) {
       buyerEmailAddress: customer.email,
       note: `Pickup: ${pickupWindow || 'TBD'} · ${customer.name}`,
     });
+
+    // ---- Persist order JSON for tracking + fire confirmation email ----
+    // Best-effort post-charge: never fail the response if persistence/email
+    // hiccup. Receipt URL is the customer's safety net.
+    try {
+      const { givenName } = splitName(customer.name);
+      const orderRecord = {
+        orderId,
+        createdAt: new Date().toISOString(),
+        status: 'paid',
+        statusHistory: [{ status: 'paid', ts: new Date().toISOString(), auto: true }],
+        photos: [],
+        notes: [],
+        emails: [],
+        pickupAddress: '',
+        pickupWindow: String(pickupWindow || ''),
+        pickupDate: null,
+        pickupTimeNote: '',
+        canceledAt: null,
+        customerId,
+        customerName: customer.name,
+        customerEmail: customer.email,
+        customerPhone: customer.phone,
+        customerFirstName: givenName,
+        lineItems: lineItems.map(li => ({
+          name: li.name,
+          quantity: li.quantity,
+          priceCents: Number(li.basePriceMoney.amount),
+        })),
+        totalCents,
+        flow: 'cart',
+      };
+      // Persist BEFORE sending email so the track URL points to a real page.
+      await writeOrder(orderId, orderRecord);
+      const result = await sendEmail(orderRecord, 'order-confirmation', {}, { trigger: 'auto' });
+      // sendEmail mutated orderRecord.emails — re-persist with the log entry.
+      await writeOrder(orderId, orderRecord);
+    } catch (persistErr) {
+      console.error('Order persistence/email error (non-fatal):', persistErr.message);
+    }
 
     return res.status(200).json({
       success: true,

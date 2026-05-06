@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Order — Admin · MJ's Sweets</title>
+  <meta name="robots" content="noindex,nofollow">
+  <style>
+    :root {
+      --pink: #FF3B7F; --pink-light: #FF6B9D; --cream: #FFF8F0;
+      --text: #2A1A2E; --muted: #5C4A6B; --border: #F0E2D2;
+      --success: #6BCB77; --warn: #FFB347; --error: #E57373;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--cream); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; line-height: 1.45; }
+    a { color: var(--pink); text-decoration: none; }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 14px; padding-bottom: 100px; }
+    .card { background: white; border-radius: 14px; box-shadow: 0 4px 12px rgba(42,26,46,0.06); margin-bottom: 12px; overflow: hidden; }
+    .header { background: linear-gradient(135deg, var(--pink-light), var(--pink)); color: white; padding: 18px 22px; }
+    .header .crumb { font-size: 13px; opacity: 0.9; }
+    .header .crumb a { color: white; text-decoration: underline; }
+    .header h1 { margin: 4px 0 0; font-family: Georgia, serif; font-size: 20px; }
+    .header .sub { margin-top: 4px; font-size: 13px; opacity: 0.9; }
+    .section { padding: 16px 22px; }
+    .section + .section { border-top: 1px dashed var(--border); }
+    h2 { font-family: Georgia, serif; font-size: 16px; margin: 0 0 10px; }
+    .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; background: var(--cream); color: var(--muted); border: 1px solid var(--border); margin-right: 6px; text-transform: capitalize; }
+    .row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
+    .row + .row { border-top: 1px dotted var(--border); }
+    .label-text { color: var(--muted); }
+    button.primary { background: var(--pink); color: white; border: 0; padding: 11px 18px; border-radius: 999px; font-weight: 600; font-size: 14px; cursor: pointer; }
+    button.secondary { background: white; color: var(--text); border: 1px solid var(--border); padding: 8px 14px; border-radius: 999px; font-size: 13px; cursor: pointer; margin-right: 6px; margin-bottom: 6px; }
+    button.danger { background: var(--error); color: white; border: 0; padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    button.success { background: var(--success); color: white; border: 0; padding: 11px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: wait; }
+    .pipe { display: flex; flex-wrap: wrap; gap: 6px; }
+    .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+    .photo-thumb { position: relative; border-radius: 10px; overflow: hidden; background: var(--cream); }
+    .photo-thumb img { display: block; width: 100%; height: auto; }
+    .photo-thumb .delete-btn { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.55); color: white; border: 0; width: 26px; height: 26px; border-radius: 50%; font-size: 14px; cursor: pointer; }
+    .email-row { padding: 10px 12px; background: var(--cream); border-radius: 8px; margin-bottom: 6px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .email-row.failed { background: #FCE9E9; }
+    .email-row .email-meta { flex: 1; min-width: 0; }
+    .email-row .email-trigger { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .email-row .email-subj { font-weight: 600; font-size: 13px; }
+    .email-row .email-info { font-size: 12px; color: var(--muted); }
+    .email-row .preview-btn { background: white; border: 1px solid var(--border); padding: 6px 10px; border-radius: 999px; font-size: 12px; cursor: pointer; }
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: none; align-items: flex-end; justify-content: center; }
+    .modal.open { display: flex; }
+    .modal-panel { background: white; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; border-radius: 16px 16px 0 0; padding: 18px 22px; }
+    @media (min-width: 600px) { .modal { align-items: center; } .modal-panel { border-radius: 16px; max-height: 80vh; } }
+    .modal h3 { margin: 0 0 12px; font-family: Georgia, serif; font-size: 17px; }
+    .modal label { display: block; font-size: 13px; color: var(--muted); margin: 8px 0 4px; }
+    .modal input[type="text"], .modal input[type="date"], .modal textarea, .modal select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; font-family: inherit; }
+    .modal textarea { min-height: 80px; resize: vertical; }
+    .cadence { font-size: 12px; color: var(--muted); margin-top: 4px; padding: 6px 10px; background: var(--cream); border-radius: 6px; }
+    .send-btn { width: 100%; margin-top: 14px; }
+    .preview-iframe { width: 100%; height: 60vh; border: 1px solid var(--border); border-radius: 8px; background: white; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .upcoming, .wontfire { font-size: 13px; padding: 8px 12px; background: var(--cream); border-radius: 8px; margin-bottom: 5px; color: var(--muted); }
+    .wontfire { opacity: 0.7; }
+    .send-update-cta { position: fixed; bottom: 16px; left: 16px; right: 16px; max-width: 688px; margin: 0 auto; z-index: 50; }
+    .send-update-cta button { width: 100%; padding: 14px; font-size: 15px; }
+    .error { color: var(--error); font-size: 13px; margin: 6px 0; }
+    .ok { color: var(--success); font-size: 13px; margin: 6px 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap"><div id="root">Loading…</div></div>
+
+  <!-- Sticky Send Update CTA -->
+  <div class="send-update-cta" id="sendCta" style="display:none;">
+    <button class="primary" onclick="openSendModal()" id="sendBtn">📨 Send update to <span id="sendBtnName">customer</span></button>
+  </div>
+
+  <!-- Send Update Modal -->
+  <div class="modal" id="sendModal">
+    <div class="modal-panel">
+      <h3>Send update <span id="sendModalName" style="font-weight:400;color:var(--muted);"></span></h3>
+      <div class="cadence" id="cadenceIndicator">📧 Cadence loading…</div>
+      <form id="sendForm" enctype="multipart/form-data" onsubmit="submitSendUpdate(event)">
+        <label for="sendPhotos">Photos (optional, up to 10)</label>
+        <input type="file" id="sendPhotos" name="photos" multiple accept="image/*" capture="environment" />
+        <label for="sendNote">Note (optional)</label>
+        <textarea id="sendNote" name="note" placeholder="What do you want them to see?"></textarea>
+        <label for="sendNextStatus">Advance status (optional)</label>
+        <select id="sendNextStatus" name="nextStatus">
+          <option value="">Don't change status</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="baking">Baking</option>
+          <option value="decorating">Decorating</option>
+        </select>
+        <div id="sendError" class="error" style="display:none;"></div>
+        <button class="primary send-btn" type="submit" id="sendSubmit">Send →</button>
+        <button type="button" class="secondary" onclick="closeSendModal()" style="width:100%;margin-top:8px;">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Mark Ready Modal -->
+  <div class="modal" id="readyModal">
+    <div class="modal-panel">
+      <h3>Mark Ready for pickup</h3>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 12px;">This auto-emails the customer with pickup details.</p>
+      <form onsubmit="submitMarkReady(event)">
+        <label for="readyDate">Pickup date</label>
+        <input type="date" id="readyDate" required />
+        <label for="readyAddress">Pickup address</label>
+        <textarea id="readyAddress" placeholder="e.g. 123 Main St, Madisonville, LA 70447 — text when you arrive"></textarea>
+        <label for="readyTimeNote">Time window (optional)</label>
+        <input type="text" id="readyTimeNote" placeholder="e.g. 10am–12pm window" />
+        <div id="readyError" class="error" style="display:none;"></div>
+        <button class="success send-btn" type="submit" id="readySubmit">Send "Ready" email →</button>
+        <button type="button" class="secondary" onclick="closeReadyModal()" style="width:100%;margin-top:8px;">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Email Preview Modal -->
+  <div class="modal" id="previewModal">
+    <div class="modal-panel" style="max-width:720px;">
+      <h3 id="previewTitle">Email preview</h3>
+      <div id="previewMeta" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
+      <iframe id="previewFrame" class="preview-iframe" sandbox=""></iframe>
+      <button type="button" class="secondary" onclick="closePreview()" style="width:100%;margin-top:8px;">Close</button>
+    </div>
+  </div>
+
+  <script>
+    const orderId = decodeURIComponent(location.pathname.split('/').pop() || new URLSearchParams(location.search).get('id') || '');
+    let currentOrder = null;
+    let currentExpected = [];
+    let currentWontFire = [];
+
+    function escapeHtml(s) {
+      return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function fmtDate(iso) {
+      if (!iso) return '';
+      try { return new Date(iso).toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (_) { return iso; }
+    }
+    function todayCentralYmd() {
+      const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+      return parts.find(p => p.type === 'year').value + '-' + parts.find(p => p.type === 'month').value + '-' + parts.find(p => p.type === 'day').value;
+    }
+    function countTodayEmails(order) {
+      const today = todayCentralYmd();
+      return (order.emails || []).filter(e => {
+        const d = e.ts ? new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(e.ts)) : null;
+        if (!d) return false;
+        const ymd = d.find(p => p.type === 'year').value + '-' + d.find(p => p.type === 'month').value + '-' + d.find(p => p.type === 'day').value;
+        return ymd === today && e.status === 'sent';
+      }).length;
+    }
+
+    async function load() {
+      const r = await fetch('/api/admin-order-detail?id=' + encodeURIComponent(orderId), { credentials: 'include' });
+      if (r.status === 401) { location.assign('/admin'); return; }
+      if (!r.ok) { document.getElementById('root').innerHTML = '<div class="card"><div class="section error">Could not load order.</div></div>'; return; }
+      const data = await r.json();
+      currentOrder = data.order;
+      currentExpected = data.expectedEmails || [];
+      currentWontFire = data.wontFireEmails || [];
+      render();
+    }
+
+    function render() {
+      const o = currentOrder;
+      const first = o.customerFirstName || (o.customerName || '').split(' ')[0] || 'Customer';
+      document.getElementById('sendBtnName').textContent = first;
+      document.getElementById('sendModalName').textContent = '· to ' + first;
+
+      const isCanceled = o.status === 'canceled';
+      const isPickedUp = o.status === 'picked-up';
+      const isNoShow = o.status === 'no-show';
+      const terminal = isCanceled || isPickedUp || isNoShow;
+
+      const itemsHtml = (o.lineItems || []).map(li => `<div class="row"><span>${escapeHtml(li.name)} × ${escapeHtml(li.quantity)}</span><span>$${((li.priceCents * Number(li.quantity)) / 100).toFixed(2)}</span></div>`).join('');
+
+      const photosHtml = (o.photos || []).length === 0
+        ? '<p style="color:var(--muted);font-size:13px;margin:0;">No photos yet.</p>'
+        : `<div class="photo-grid">${(o.photos || []).map(p => `
+            <div class="photo-thumb" style="${p.hidden ? 'opacity:0.35;' : ''}">
+              <img src="${escapeHtml(p.url)}" alt="" loading="lazy" />
+              ${!p.hidden ? `<button class="delete-btn" onclick="confirmDeletePhoto('${escapeHtml(p.url)}')" aria-label="Hide photo">×</button>` : ''}
+            </div>`).join('')}</div>`;
+
+      // Email Activity sections
+      const sentHtml = ((o.emails || []).slice().reverse().map(e => `
+        <div class="email-row ${e.status === 'failed' ? 'failed' : ''}">
+          <div class="email-meta">
+            <div class="email-trigger">${e.status === 'failed' ? '❌' : '✅'} ${escapeHtml(e.trigger || 'auto')} · ${escapeHtml(e.type)}</div>
+            <div class="email-subj">${escapeHtml(e.subject || '')}</div>
+            <div class="email-info">${fmtDate(e.ts)}${e.openedAt ? ' · opened ✉️' : (e.deliveredAt ? ' · delivered' : '')}${e.errorDetail ? ' · ' + escapeHtml(e.errorDetail) : ''}</div>
+          </div>
+          ${e.status === 'sent' ? `<button class="preview-btn" onclick="previewEmail('${escapeHtml(e.id)}')">View</button>` : ''}
+        </div>`).join('')) || '<p style="color:var(--muted);font-size:13px;margin:0;">No emails sent yet.</p>';
+
+      const expectedHtml = currentExpected.length === 0 ? '<p style="color:var(--muted);font-size:13px;margin:0;">— none —</p>'
+        : currentExpected.map(e => `<div class="upcoming">⏰ <strong>${escapeHtml(e.label)}</strong><br><span style="font-size:12px;">${escapeHtml(e.when)} · ${escapeHtml(e.source)}</span></div>`).join('');
+
+      const wontHtml = currentWontFire.length === 0 ? '<p style="color:var(--muted);font-size:13px;margin:0;">— none —</p>'
+        : currentWontFire.map(e => `<div class="wontfire">⚪ <strong>${escapeHtml(e.label)}</strong> · <span style="font-size:12px;">${escapeHtml(e.condition)}</span></div>`).join('');
+
+      // Status pipeline buttons
+      const advanceBtns = !terminal ? `
+        ${o.status === 'paid' ? '<button class="secondary" onclick="advance(\'confirmed\')">→ Confirmed</button>' : ''}
+        ${o.status === 'confirmed' ? '<button class="secondary" onclick="advance(\'baking\')">→ Baking</button>' : ''}
+        ${o.status === 'baking' ? '<button class="secondary" onclick="advance(\'decorating\')">→ Decorating</button>' : ''}
+        ${['confirmed','baking','decorating'].includes(o.status) ? '<button class="success" onclick="openReadyModal()">Mark Ready (with email)</button>' : ''}
+        ${o.status === 'ready' ? '<button class="success" onclick="markPickedUp()">Mark Picked Up (with email)</button>' : ''}
+        ${o.status === 'ready' ? '<button class="secondary" onclick="confirmNoShow()">Flag No-Show</button>' : ''}
+      ` : '';
+
+      const dangerBtns = !terminal ? `
+        <button class="danger" onclick="cancelOrder()" style="margin-top:8px;">Cancel & refund</button>
+      ` : (isCanceled ? `<div class="ok">Canceled · refund email sent</div>` : '');
+
+      document.getElementById('root').innerHTML = `
+        <div class="card">
+          <div class="header">
+            <div class="crumb"><a href="/admin">← All orders</a></div>
+            <h1>${escapeHtml(o.customerFirstName || o.customerName || 'Customer')}</h1>
+            <div class="sub">Order #${escapeHtml(o.orderId.slice(0, 8))} · <span style="text-transform:capitalize;">${escapeHtml((o.status || 'paid').replace(/-/g, ' '))}</span></div>
+          </div>
+          <div class="section">
+            <h2>Customer</h2>
+            <div class="row"><span class="label-text">Name</span><span>${escapeHtml(o.customerName || '')}</span></div>
+            <div class="row"><span class="label-text">Email</span><span><a href="mailto:${escapeHtml(o.customerEmail)}">${escapeHtml(o.customerEmail || '')}</a></span></div>
+            <div class="row"><span class="label-text">Phone</span><span><a href="tel:${escapeHtml((o.customerPhone || '').replace(/\\D/g,''))}">${escapeHtml(o.customerPhone || '')}</a></span></div>
+          </div>
+          <div class="section">
+            <h2>Items</h2>${itemsHtml}
+            <div class="row" style="font-weight:600;border-top:1px solid var(--border);margin-top:6px;"><span>Total</span><span>$${((o.totalCents || 0) / 100).toFixed(2)}</span></div>
+            ${o.flow === 'custom-order' && o.vision ? `<div style="margin-top:14px;"><div class="label-text" style="font-size:13px;">Vision</div><div style="background:var(--cream);padding:10px 14px;border-radius:10px;white-space:pre-wrap;font-size:14px;">${escapeHtml(o.vision)}</div></div>` : ''}
+          </div>
+          <div class="section">
+            <h2>Status pipeline</h2>
+            <div class="pipe">${advanceBtns || '<span style="color:var(--muted);font-size:13px;">No further actions — order is in a terminal state.</span>'}</div>
+            ${dangerBtns}
+          </div>
+          <div class="section">
+            <h2>Photos</h2>
+            ${photosHtml}
+            <p style="font-size:12px;color:var(--muted);margin:8px 0 0;">Photos can be hidden via the × button. Hidden photos stay in already-sent emails but disappear from the customer's tracking page.</p>
+          </div>
+          ${o.pickupAddress || o.pickupDate ? `
+            <div class="section">
+              <h2>Pickup</h2>
+              ${o.pickupDate ? `<div class="row"><span class="label-text">Date</span><span>${escapeHtml(o.pickupDate)}</span></div>` : ''}
+              ${o.pickupAddress ? `<div class="row"><span class="label-text">Address</span><span style="white-space:pre-wrap;">${escapeHtml(o.pickupAddress)}</span></div>` : ''}
+              ${o.pickupTimeNote ? `<div class="row"><span class="label-text">Time note</span><span>${escapeHtml(o.pickupTimeNote)}</span></div>` : ''}
+            </div>` : ''}
+          <div class="section">
+            <h2>Email Activity</h2>
+            <h3 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px;">Sent</h3>
+            ${sentHtml}
+            <h3 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px;">Coming up</h3>
+            ${expectedHtml}
+            <h3 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px;">Won't fire</h3>
+            ${wontHtml}
+          </div>
+        </div>`;
+
+      // Show the sticky CTA only if not terminal
+      document.getElementById('sendCta').style.display = terminal ? 'none' : 'block';
+    }
+
+    // Send Update modal
+    function openSendModal() {
+      document.getElementById('cadenceIndicator').textContent = `📧 ${countTodayEmails(currentOrder)} email${countTodayEmails(currentOrder) === 1 ? '' : 's'} sent to ${currentOrder.customerFirstName || 'this customer'} today`;
+      document.getElementById('sendModal').classList.add('open');
+    }
+    function closeSendModal() { document.getElementById('sendModal').classList.remove('open'); }
+
+    async function submitSendUpdate(e) {
+      e.preventDefault();
+      const fd = new FormData(document.getElementById('sendForm'));
+      const btn = document.getElementById('sendSubmit');
+      const err = document.getElementById('sendError');
+      err.style.display = 'none';
+      btn.disabled = true; btn.textContent = 'Sending…';
+      try {
+        const r = await fetch('/api/admin-update?action=send-update&id=' + encodeURIComponent(orderId), {
+          method: 'POST', body: fd, credentials: 'include',
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok || !data.ok) {
+          err.textContent = data.error || 'Send failed.'; err.style.display = 'block';
+          btn.disabled = false; btn.textContent = 'Send →';
+          return;
+        }
+        closeSendModal();
+        document.getElementById('sendForm').reset();
+        await load();
+      } catch (_) {
+        err.textContent = 'Network issue.'; err.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Send →';
+      }
+    }
+
+    // Status advances (silent)
+    async function advance(status) {
+      const r = await fetch('/api/admin-update?action=advance-status&id=' + encodeURIComponent(orderId), {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ status }), credentials: 'include',
+      });
+      if (r.ok) await load(); else alert('Failed to advance status.');
+    }
+
+    // Mark Ready
+    function openReadyModal() {
+      document.getElementById('readyDate').value = todayCentralYmd();
+      document.getElementById('readyModal').classList.add('open');
+    }
+    function closeReadyModal() { document.getElementById('readyModal').classList.remove('open'); }
+    async function submitMarkReady(e) {
+      e.preventDefault();
+      const body = {
+        pickupDate: document.getElementById('readyDate').value,
+        pickupAddress: document.getElementById('readyAddress').value,
+        pickupTimeNote: document.getElementById('readyTimeNote').value,
+      };
+      const btn = document.getElementById('readySubmit');
+      const err = document.getElementById('readyError');
+      err.style.display = 'none';
+      btn.disabled = true; btn.textContent = 'Sending…';
+      try {
+        const r = await fetch('/api/admin-update?action=mark-ready&id=' + encodeURIComponent(orderId), {
+          method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body), credentials: 'include',
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) { err.textContent = data.error || 'Failed.'; err.style.display = 'block'; btn.disabled=false; btn.textContent='Send "Ready" email →'; return; }
+        closeReadyModal();
+        await load();
+      } catch (_) { err.textContent = 'Network issue.'; err.style.display = 'block'; btn.disabled=false; btn.textContent='Send "Ready" email →'; }
+    }
+
+    async function markPickedUp() {
+      if (!confirm('Mark Picked Up? This sends the thank-you email.')) return;
+      const r = await fetch('/api/admin-update?action=mark-picked-up&id=' + encodeURIComponent(orderId), { method: 'POST', credentials: 'include' });
+      if (r.ok) await load(); else alert('Failed.');
+    }
+
+    async function confirmNoShow() {
+      if (!confirm('Flag No-Show? This sends the "did we miss you?" email.')) return;
+      const r = await fetch('/api/admin-update?action=confirm-no-show&id=' + encodeURIComponent(orderId), { method: 'POST', credentials: 'include' });
+      if (r.ok) await load(); else alert('Failed.');
+    }
+
+    async function cancelOrder() {
+      const sqUrl = 'https://squareup.com/dashboard/orders';
+      if (!confirm('Cancel & refund this order?\\n\\n1. Process the refund in Square dashboard first.\\n2. Then click OK to mark canceled here AND send the customer the refund-confirmation email.\\n\\nClick OK only AFTER you have refunded in Square.')) return;
+      const r = await fetch('/api/admin-update?action=refund-completed&id=' + encodeURIComponent(orderId), {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({}), credentials: 'include',
+      });
+      if (r.ok) await load(); else alert('Failed.');
+    }
+
+    async function confirmDeletePhoto(url) {
+      if (!confirm('Hide this photo?\\n\\nIt was sent in past emails — those emails will still show it.\\nThe customer\\'s tracking page will hide it going forward.')) return;
+      const r = await fetch('/api/admin-update?action=soft-delete-photo&id=' + encodeURIComponent(orderId), {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ photoUrl: url }), credentials: 'include',
+      });
+      if (r.ok) await load(); else alert('Failed.');
+    }
+
+    async function previewEmail(emailId) {
+      const r = await fetch('/api/admin-email-preview?orderId=' + encodeURIComponent(orderId) + '&emailId=' + encodeURIComponent(emailId), { credentials: 'include' });
+      if (!r.ok) { alert('Could not load preview.'); return; }
+      const data = await r.json();
+      document.getElementById('previewTitle').textContent = data.subject || 'Email preview';
+      document.getElementById('previewMeta').textContent = `${data.type} · sent ${fmtDate(data.ts)} · to ${data.to || ''} · status ${data.status}`;
+      document.getElementById('previewFrame').srcdoc = data.html || '';
+      document.getElementById('previewModal').classList.add('open');
+    }
+    function closePreview() { document.getElementById('previewModal').classList.remove('open'); }
+
+    if (!orderId) {
+      document.getElementById('root').innerHTML = '<div class="card"><div class="section error">No order ID.</div></div>';
+    } else {
+      load();
+    }
+  </script>
+</body>
+</html>

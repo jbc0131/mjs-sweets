@@ -31,7 +31,9 @@ const { put } = require('@vercel/blob');
 const { Client, Environment, ApiError } = require('square');
 const { RestClient } = require('@signalwire/compatibility-api');
 const { Resend } = require('resend');
-const { ensureCustomer } = require('./_lib/squareCustomer');
+const { ensureCustomer, splitName } = require('./_lib/squareCustomer');
+const { writeOrder } = require('./_lib/order-storage');
+const { sendEmail } = require('./_lib/email');
 
 // ---- Limits ----
 const MAX_PHOTOS = 5;
@@ -523,6 +525,45 @@ async function handler(req, res) {
   // ============================================================
 
   const orderShortId = (orderId || '').slice(0, 8) || 'order';
+
+  // ---- Persist order JSON for the tracking page ----
+  // Best-effort post-charge. The existing custom-order emails fire below
+  // with their own HTML; this just makes /order/{id} resolve.
+  try {
+    const { givenName } = splitName(name);
+    const orderRecord = {
+      orderId,
+      createdAt: new Date().toISOString(),
+      status: 'paid',
+      statusHistory: [{ status: 'paid', ts: new Date().toISOString(), auto: true }],
+      photos: [],
+      notes: [],
+      emails: [],
+      pickupAddress: '',
+      pickupWindow: '',
+      pickupDate: null,
+      pickupTimeNote: dateNeeded ? `Needed by ${dateNeeded}` : '',
+      canceledAt: null,
+      customerId,
+      customerName: name,
+      customerEmail: email,
+      customerPhone: phone,
+      customerFirstName: givenName,
+      lineItems: displayLines.map(li => ({
+        name: li.name,
+        quantity: String(li.qty),
+        priceCents: li.priceCents,
+      })),
+      totalCents,
+      flow: 'custom-order',
+      occasion: occasionDisplay,
+      vision,
+      photoUrls,
+    };
+    await writeOrder(orderId, orderRecord);
+  } catch (persistErr) {
+    console.error('Order persistence error (non-fatal):', persistErr.message);
+  }
 
   // Build email payloads. `lineItems` lets the templates render a full
   // breakdown (tier + each add-on) rather than just the tier line.

@@ -1,16 +1,35 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/checkout.js": {
-      "maxDuration": 10
-    },
-    "api/config.js": {
-      "maxDuration": 5
-    },
-    "api/contact.js": {
-      "maxDuration": 30
-    }
+    "api/checkout.js": { "maxDuration": 15 },
+    "api/config.js": { "maxDuration": 5 },
+    "api/contact.js": { "maxDuration": 30 },
+    "api/order-status.js": { "maxDuration": 10 },
+    "api/order-verify.js": { "maxDuration": 10 },
+    "api/admin-login.js": { "maxDuration": 5 },
+    "api/admin-logout.js": { "maxDuration": 5 },
+    "api/admin-orders.js": { "maxDuration": 30 },
+    "api/admin-order-detail.js": { "maxDuration": 10 },
+    "api/admin-update.js": { "maxDuration": 60 },
+    "api/admin-email-preview.js": { "maxDuration": 10 },
+    "api/resend-webhook.js": { "maxDuration": 15 },
+    "api/cron-pickup-tomorrow.js": { "maxDuration": 60 },
+    "api/cron-pickup-today.js": { "maxDuration": 60 },
+    "api/cron-no-show-check.js": { "maxDuration": 30 },
+    "api/cron-post-pickup-review.js": { "maxDuration": 60 },
+    "api/cron-maddie-summary.js": { "maxDuration": 60 }
   },
+  "crons": [
+    { "path": "/api/cron-maddie-summary", "schedule": "0 12 * * *" },
+    { "path": "/api/cron-pickup-today", "schedule": "0 13 * * *" },
+    { "path": "/api/cron-pickup-tomorrow", "schedule": "0 14 * * *" },
+    { "path": "/api/cron-post-pickup-review", "schedule": "0 16 * * *" }
+  ],
+  "rewrites": [
+    { "source": "/order/:id", "destination": "/order.html?id=:id" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/admin/order/:id", "destination": "/admin-order.html?id=:id" }
+  ],
   "headers": [
     {
       "source": "/(.*)",

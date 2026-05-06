@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Admin — MJ's Sweets</title>
+  <meta name="robots" content="noindex,nofollow">
+  <style>
+    :root {
+      --pink: #FF3B7F; --pink-light: #FF6B9D; --cream: #FFF8F0;
+      --text: #2A1A2E; --muted: #5C4A6B; --border: #F0E2D2;
+      --success: #6BCB77; --warn: #FFB347; --error: #E57373;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--cream); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; line-height: 1.45; }
+    a { color: var(--pink); text-decoration: none; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 16px; }
+    .card { background: white; border-radius: 14px; box-shadow: 0 4px 12px rgba(42,26,46,0.06); margin-bottom: 14px; overflow: hidden; }
+    .header { background: linear-gradient(135deg, var(--pink-light), var(--pink)); color: white; padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { margin: 0; font-family: Georgia, serif; font-size: 20px; }
+    .section { padding: 18px 22px; }
+    .section + .section { border-top: 1px dashed var(--border); }
+    h2 { font-family: Georgia, serif; font-size: 16px; margin: 0 0 10px; }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+    input[type="text"], input[type="password"], input[type="search"], select { width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 15px; }
+    button.primary { background: var(--pink); color: white; border: 0; padding: 12px 18px; border-radius: 999px; font-weight: 600; font-size: 14px; cursor: pointer; }
+    button.secondary { background: white; color: var(--text); border: 1px solid var(--border); padding: 8px 14px; border-radius: 999px; font-size: 13px; cursor: pointer; }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .filters select, .filters input { width: auto; flex: 1; min-width: 120px; }
+    .order-row { display: flex; flex-direction: column; padding: 12px 14px; background: var(--cream); border-radius: 10px; margin-bottom: 8px; cursor: pointer; }
+    .order-row:hover { background: #FFF0E0; }
+    .order-row .top { display: flex; justify-content: space-between; align-items: baseline; }
+    .order-row .name { font-weight: 600; font-size: 15px; }
+    .order-row .status { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: white; color: var(--muted); border: 1px solid var(--border); text-transform: capitalize; }
+    .order-row .status.ready { color: var(--success); border-color: var(--success); }
+    .order-row .status.canceled { color: var(--error); border-color: var(--error); }
+    .order-row .meta { font-size: 13px; color: var(--muted); margin-top: 4px; }
+    .panel { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    @media (max-width: 600px) { .panel { grid-template-columns: 1fr; } }
+    .stat { background: var(--cream); padding: 12px 14px; border-radius: 10px; }
+    .stat .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .stat .num { font-size: 22px; font-weight: 700; margin-top: 4px; }
+    .stat.alert .num { color: var(--error); }
+    .stat .detail { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .login-card { max-width: 380px; margin: 60px auto; }
+    .error { color: var(--error); font-size: 13px; margin: 8px 0; }
+    .empty { color: var(--muted); font-style: italic; padding: 16px 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div id="root"></div>
+  </div>
+
+  <script>
+    async function checkAuth() {
+      const r = await fetch('/api/admin-orders', { credentials: 'include' });
+      return r.status !== 401;
+    }
+
+    function escapeHtml(s) {
+      return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function fmtDate(iso) {
+      if (!iso) return '';
+      try {
+        return new Date(iso).toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      } catch (_) { return iso; }
+    }
+
+    function renderLogin() {
+      document.getElementById('root').innerHTML = `
+        <div class="card login-card">
+          <div class="header"><h1>Admin login</h1></div>
+          <div class="section">
+            <form onsubmit="submitLogin(event)">
+              <label for="adminPw">Password</label>
+              <input type="password" id="adminPw" required autofocus />
+              <div id="loginError" class="error" style="display:none;"></div>
+              <div style="margin-top:14px;"><button class="primary" type="submit" id="loginBtn">Sign in</button></div>
+            </form>
+          </div>
+        </div>`;
+    }
+
+    async function submitLogin(e) {
+      e.preventDefault();
+      const pw = document.getElementById('adminPw').value;
+      const err = document.getElementById('loginError');
+      const btn = document.getElementById('loginBtn');
+      err.style.display = 'none';
+      btn.disabled = true; btn.textContent = 'Signing in…';
+      try {
+        const r = await fetch('/api/admin-login', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ password: pw }), credentials: 'include',
+        });
+        if (r.ok) { renderList(); return; }
+        err.textContent = 'Wrong password.'; err.style.display = 'block';
+      } catch (_) { err.textContent = 'Network issue.'; err.style.display = 'block'; }
+      btn.disabled = false; btn.textContent = 'Sign in';
+    }
+
+    async function logout() {
+      await fetch('/api/admin-logout', { method: 'POST', credentials: 'include' });
+      renderLogin();
+    }
+
+    let currentFilters = { status: '', pickupDate: '', q: '' };
+
+    async function renderList() {
+      const root = document.getElementById('root');
+      root.innerHTML = '<div class="card"><div class="section">Loading…</div></div>';
+      const params = new URLSearchParams();
+      if (currentFilters.status) params.set('status', currentFilters.status);
+      if (currentFilters.pickupDate) params.set('pickupDate', currentFilters.pickupDate);
+      if (currentFilters.q) params.set('q', currentFilters.q);
+      const r = await fetch('/api/admin-orders?' + params.toString(), { credentials: 'include' });
+      if (r.status === 401) { renderLogin(); return; }
+      if (!r.ok) { root.innerHTML = '<div class="card"><div class="section error">Error loading orders.</div></div>'; return; }
+      const { orders, emailSummary } = await r.json();
+
+      const sumLastSent = emailSummary.lastSent;
+      const firstFailed = emailSummary.firstFailed;
+
+      const ordersHtml = orders.length === 0
+        ? '<div class="empty">No orders match these filters.</div>'
+        : orders.map(o => `
+          <div class="order-row" onclick="location.assign('/admin/order/${encodeURIComponent(o.orderId)}')">
+            <div class="top">
+              <span class="name">${escapeHtml(o.customerFirstName || o.customerName || 'Customer')} <span style="color:var(--muted);font-weight:400;font-size:13px;">· #${escapeHtml(o.orderId.slice(0, 8))}</span></span>
+              <span class="status ${escapeHtml(o.status || 'paid')}">${escapeHtml((o.status || 'paid').replace(/-/g, ' '))}</span>
+            </div>
+            <div class="meta">
+              ${(o.lineItems || []).map(li => escapeHtml(li.name) + ' × ' + escapeHtml(li.quantity)).join(' + ')}
+              ${o.pickupDate ? ' · pickup ' + escapeHtml(o.pickupDate) : ''}
+              · $${((o.totalCents || 0) / 100).toFixed(2)}
+            </div>
+          </div>`).join('');
+
+      root.innerHTML = `
+        <div class="card">
+          <div class="header">
+            <h1>Orders</h1>
+            <button class="secondary" onclick="logout()" style="background:rgba(255,255,255,0.2);color:white;border-color:transparent;">Sign out</button>
+          </div>
+          <div class="section">
+            <h2>Emails · last 24 hours</h2>
+            <div class="panel">
+              <div class="stat"><div class="label">📤 Sent</div><div class="num">${emailSummary.sent}</div><div class="detail">${sumLastSent ? 'last: ' + fmtDate(sumLastSent.ts) + ' · ' + escapeHtml(sumLastSent.subject || '') : '—'}</div></div>
+              <div class="stat ${emailSummary.failed > 0 ? 'alert' : ''}"><div class="label">${emailSummary.failed > 0 ? '⚠️' : '✅'} Failed</div><div class="num">${emailSummary.failed}</div><div class="detail">${firstFailed ? escapeHtml(firstFailed.errorDetail || 'see order') : 'no failures'}</div></div>
+              <div class="stat"><div class="label">⏰ Active orders</div><div class="num">${orders.filter(o => !['picked-up','canceled','no-show'].includes(o.status)).length}</div><div class="detail">in flight</div></div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="filters">
+              <select id="fStatus">
+                <option value="">All statuses</option>
+                <option value="paid">Paid</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="baking">Baking</option>
+                <option value="decorating">Decorating</option>
+                <option value="ready">Ready</option>
+                <option value="picked-up">Picked Up</option>
+                <option value="canceled">Canceled</option>
+                <option value="no-show">No-Show</option>
+              </select>
+              <select id="fPickup">
+                <option value="">Any pickup date</option>
+                <option value="today">Today</option>
+                <option value="this-week">This week</option>
+              </select>
+              <input id="fQ" type="search" placeholder="Search name, email, phone, ID" />
+            </div>
+            ${ordersHtml}
+          </div>
+        </div>`;
+
+      document.getElementById('fStatus').value = currentFilters.status;
+      document.getElementById('fPickup').value = currentFilters.pickupDate;
+      document.getElementById('fQ').value = currentFilters.q;
+      document.getElementById('fStatus').addEventListener('change', e => { currentFilters.status = e.target.value; renderList(); });
+      document.getElementById('fPickup').addEventListener('change', e => { currentFilters.pickupDate = e.target.value; renderList(); });
+      let qTimer; document.getElementById('fQ').addEventListener('input', e => {
+        clearTimeout(qTimer); qTimer = setTimeout(() => { currentFilters.q = e.target.value; renderList(); }, 300);
+      });
+    }
+
+    (async function init() {
+      const ok = await checkAuth();
+      if (ok) renderList(); else renderLogin();
+    })();
+  </script>
+</body>
+</html>

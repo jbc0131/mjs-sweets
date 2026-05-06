@@ -4,6 +4,63 @@ Chronological record of significant work. Most recent at top.
 
 ---
 
+## 2026-05-06 — Order tracking + admin interface (full feature ship)
+
+Built end-to-end against `ORDER_TRACKING_PLAN.md`. ~25 files created/modified across 13 phases. Customer tracking page, admin orders list, admin per-order management with unified Send Update flow, 4 cron-driven email reminders, Resend webhook for delivery/open tracking, Email Activity panel for visibility into every email sent and upcoming.
+
+### What landed
+
+- **Storage layer (`api/_lib/order-storage.js`):** Vercel Blob CRUD on `orders/{orderId}.json`. Append-only `emails[]` log; soft-delete via `hidden: true` on photos so already-sent email URLs survive deletion in admin. Maintains `orders/_email-index.json` mapping `resendId → orderId` so the webhook avoids brute-scanning every order on each event.
+- **Auth (`api/_lib/order-auth.js`, `api/_lib/admin-auth.js`):** HMAC-SHA256 signed cookies + URL tokens. Customer cookie is `mjs_order_{orderId}`, signed with `ORDER_VERIFY_SECRET`. URL tokens (`?t=`) are base64url-encoded versions of the same tuple, used in email links so customers click straight through. Admin cookie is `mjs_admin`, signed with `ADMIN_COOKIE_SECRET`. Timing-safe compare on every signature check; in-memory rate limit on failed admin logins and order-verify lookups (5 attempts / 15 min).
+- **Email library (`api/_lib/email.js`):** 10 templates — `order-confirmation`, `send-update`, `ready-for-pickup`, `picked-up`, `refund-confirmation`, `no-show-checkin`, `pickup-tomorrow`, `pickup-today`, `post-pickup-review`, `maddie-daily-summary`. All wall-clock formatting via `Intl.DateTimeFormat('America/Chicago')` so DST is handled. `sendEmail` mutates `order.emails[]` in-memory and returns the entry; caller persists via `writeOrder`. `computeExpectedEmails(order)` and `computeWontFireEmails(order)` are pure read-time functions powering the Email Activity panel. Includes the Svix-style webhook signature verifier for Resend.
+- **Customer-facing (`order.html`):** Status timeline (paid → confirmed → baking → decorating → ready → picked up, plus side states for Canceled/No-Show), photo gallery filtered to non-hidden, lightbox on tap, conditional pickup address block (only when `status === 'ready'` or `'picked-up'`), "Need to change something? Text Maddie" CTA. Mobile-first layout matches the existing storefront aesthetic.
+- **Track Order modal (in `index.html`):** Last name OR phone + order ID lookup. Phone matching handles both raw `customer_phone` (Square Order metadata) and E.164 `phoneNumber` (linked Square Customer record). Generic 401 message on every failure path so we don't leak which dimension matched.
+- **Admin (`admin.html`):** Login → orders list with status / pickup-date / search filters, plus a 24-hour Email Activity dashboard panel showing sent count, failed count (with attention dot when non-zero), and active-orders count.
+- **Admin order detail (`admin-order.html`):** Sticky "Send update to {firstName}" CTA at the bottom. Send Update modal supports optional photos + optional note + optional status advance in one shot, with a per-customer cadence indicator pulled from `emails[]`. Quick actions for Mark Ready (auto-emails customer with `pickupDate` and `pickupAddress`), Mark Picked Up (auto-emails thank-you), Cancel & Refund (Maddie processes the Square refund first, then clicks back here to fire the customer email), and Flag No-Show. Email Activity panel lists Sent (with delivered/opened/failed states from the webhook), Coming Up (computed from order state), and Won't Fire (conditional emails like Refund / No-Show, surfaced for transparency). "View as customer saw it" preview re-renders the email HTML inside a sandboxed iframe.
+- **Cron jobs:** 4 daily UTC crons in `vercel.json`. `0 12 * * *` Maddie daily summary (suppresses on truly empty days), `0 13 * * *` pickup-today, `0 14 * * *` pickup-tomorrow, `0 16 * * *` post-pickup-review. Each cron checks `Authorization: Bearer ${process.env.CRON_SECRET}` before doing work. The original 5th cron (no-show-check) was removed during code review — it duplicated work already done by the daily summary's `pastDue` section.
+- **Resend webhook (`api/resend-webhook.js`):** Verifies Svix signature with ±5min replay protection, patches `emails[i]` by `resendId` with `deliveredAt` / `openedAt` / failure state. Always returns 200 (with logged warnings on unfindable IDs) to avoid Resend retry storms.
+- **Routing:** `vercel.json` rewrites: `/order/:id` → `/order.html?id=:id`, `/admin` → `/admin.html`, `/admin/order/:id` → `/admin-order.html?id=:id`. Function `maxDuration` set per endpoint.
+
+### Existing endpoint integrations
+
+- `api/checkout.js` — after Square payment success, persists the initial order JSON and fires the `order-confirmation` email. Best-effort post-charge: a persistence or email failure logs the error but never blocks the response (which would invite a double-charge retry).
+- `api/contact.js` — same pattern. The existing custom-order branded emails (Maddie + customer) still fire; the order JSON now also persists so `/order/{id}` resolves for custom orders.
+
+### Verification before shipping
+
+Independent cold audit by a subagent surfaced one BLOCKER and a few should-fix items, all addressed:
+
+1. **Race condition in `actSendUpdate` (`api/admin-update.js`)** — original code did mutateOrder → sendEmail → mutateOrder #2 → writeOrder. The second mutateOrder did a fresh Blob read that didn't yet have the email entry from sendEmail's in-memory mutation, silently dropping the log. Fixed: collapsed to a single in-memory mutation followed by one writeOrder.
+2. **`sendEmail` empty-recipient guard** — synthesized legacy orders had no `customerEmail`. Resend would have thrown; now `sendEmail` short-circuits with `status: 'skipped'` and a warning log.
+3. **Removed redundant no-show-check cron** — its surface (`pastDue` rows) is already in the daily summary.
+4. **Cleaned up admin-order.html UX** — pickup address default value moved to placeholder so Maddie doesn't have to clear it; hardcoded "Sarah" in Send Update placeholder generalized.
+
+All 20 JS files pass `node --check`. `vercel.json` validates as JSON.
+
+### Required env vars (additions to existing list)
+
+| Name | How to generate | Sensitive |
+|---|---|---|
+| `ADMIN_PASSWORD` | choose | Yes |
+| `ADMIN_COOKIE_SECRET` | `openssl rand -hex 32` | Yes |
+| `ORDER_VERIFY_SECRET` | `openssl rand -hex 32` | Yes |
+| `SITE_URL` | `https://www.mjs-sweets.com` | No |
+| `RESEND_WEBHOOK_SECRET` | from Resend dashboard webhook config | Yes |
+| `CRON_SECRET` | `openssl rand -hex 32` | Yes |
+
+All six are confirmed set in Vercel. Resend webhook configured at `https://www.mjs-sweets.com/api/resend-webhook` for events `email.delivered`, `email.opened`, `email.bounced`, `email.complained`.
+
+### Post-deploy verification steps
+
+After Vercel finishes deploying:
+1. `curl -I https://www.mjs-sweets.com/api/_lib/order-storage` → expect 404 (underscore-prefix routing exclusion).
+2. `https://www.mjs-sweets.com/admin` → login form. Valid password sets cookie, lands on orders list.
+3. Place a test order (sandbox or real). Confirmation email lands. `/order/{id}` resolves with status timeline.
+4. From admin, mark Ready → customer gets the "your cookies are ready" email automatically.
+5. Watch Email Activity panel populate `delivered` then `opened` states as Resend's webhook fires.
+
+---
+
 ## 2026-05-05 — Square Customer Directory population
 
 Both checkout endpoints (`api/checkout.js`, `api/contact.js`) now create a proper Square Customer Directory record for every paying buyer, not just a Payment-level `buyerEmailAddress` (which Square treats as a receipt destination, not as "the customer provided their info to you"). Empty Customer Directory in production was the symptom.

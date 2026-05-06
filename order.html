@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Your Order — MJ's Sweets</title>
+  <link rel="icon" href="/favicon.ico" />
+  <style>
+    :root {
+      --pink: #FF3B7F;
+      --pink-light: #FF6B9D;
+      --cream: #FFF8F0;
+      --text: #2A1A2E;
+      --muted: #5C4A6B;
+      --border: #F0E2D2;
+      --success: #6BCB77;
+      --warn: #FFB347;
+      --error: #E57373;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--cream); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; line-height: 1.5; }
+    a { color: var(--pink); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 16px; }
+    .card { background: white; border-radius: 16px; box-shadow: 0 4px 16px rgba(42,26,46,0.08); margin-bottom: 16px; overflow: hidden; }
+    .header { background: linear-gradient(135deg, var(--pink-light), var(--pink)); color: white; padding: 24px 24px 20px; }
+    .header .brand { font-family: Georgia, serif; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.9; }
+    .header h1 { margin: 6px 0 0; font-family: Georgia, serif; font-size: 22px; font-weight: 700; }
+    .header .sub { margin-top: 4px; font-size: 13px; opacity: 0.95; }
+    .section { padding: 20px 24px; }
+    .section + .section { border-top: 1px dashed var(--border); }
+    h2 { font-family: Georgia, serif; font-size: 17px; margin: 0 0 12px; }
+    .timeline { display: flex; flex-direction: column; gap: 0; }
+    .step { display: flex; align-items: flex-start; gap: 12px; padding: 8px 0; }
+    .dot { width: 28px; height: 28px; border-radius: 50%; background: #E0E0E0; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; }
+    .step.active .dot { background: var(--pink); }
+    .step.complete .dot { background: var(--success); }
+    .step.canceled .dot { background: var(--error); }
+    .step.no-show .dot { background: var(--warn); }
+    .step-body { flex: 1; padding-top: 3px; }
+    .step-label { font-weight: 600; font-size: 15px; }
+    .step.active .step-label { color: var(--pink); }
+    .step-meta { font-size: 13px; color: var(--muted); }
+    .photos { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 600px) { .photos { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } }
+    .photo { position: relative; border-radius: 12px; overflow: hidden; cursor: zoom-in; background: var(--cream); }
+    .photo img { display: block; width: 100%; height: auto; }
+    .photo-caption { padding: 8px 12px; font-size: 13px; color: var(--muted); }
+    .pickup-block { background: var(--cream); padding: 16px 18px; border-radius: 12px; border-left: 3px solid var(--success); }
+    .pickup-block .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .pickup-block .body { margin-top: 4px; white-space: pre-wrap; }
+    .cta { display: inline-block; background: var(--pink); color: white; padding: 12px 22px; border-radius: 999px; font-weight: 600; font-size: 14px; }
+    .muted { color: var(--muted); }
+    .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: none; align-items: center; justify-content: center; z-index: 1000; touch-action: manipulation; }
+    .lightbox.open { display: flex; }
+    .lightbox img { max-width: 100%; max-height: 100%; }
+    .lightbox .close { position: absolute; top: 14px; right: 18px; color: white; font-size: 28px; background: rgba(255,255,255,0.1); border: 0; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; }
+    .loading, .error-block { text-align: center; padding: 40px 20px; color: var(--muted); }
+    .order-meta { font-size: 14px; color: var(--muted); }
+    .item-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+    .item-row + .item-row { border-top: 1px dotted var(--border); }
+    .help-cta { background: var(--cream); padding: 14px 16px; border-radius: 10px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div id="root">
+      <div class="loading">Loading your order…</div>
+    </div>
+  </div>
+
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true">
+    <button class="close" aria-label="Close">×</button>
+    <img id="lightboxImg" alt="" />
+  </div>
+
+  <script>
+    (function() {
+      const params = new URLSearchParams(location.search);
+      const orderId = params.get('id');
+      const root = document.getElementById('root');
+      if (!orderId) {
+        root.innerHTML = '<div class="card"><div class="section error-block">No order ID in URL.</div></div>';
+        return;
+      }
+
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImg = document.getElementById('lightboxImg');
+      lightbox.querySelector('.close').addEventListener('click', () => lightbox.classList.remove('open'));
+      lightbox.addEventListener('click', (e) => { if (e.target === lightbox) lightbox.classList.remove('open'); });
+
+      function openLightbox(url) {
+        lightboxImg.src = url;
+        lightbox.classList.add('open');
+      }
+
+      const STAGES = [
+        { key: 'paid',       label: 'Order received' },
+        { key: 'confirmed',  label: 'Maddie confirmed' },
+        { key: 'baking',     label: 'Baking' },
+        { key: 'decorating', label: 'Decorating' },
+        { key: 'ready',      label: 'Ready for pickup' },
+        { key: 'picked-up',  label: 'Picked up' },
+      ];
+
+      function fmtDate(iso) {
+        if (!iso) return '';
+        try {
+          return new Date(iso).toLocaleString('en-US', {
+            timeZone: 'America/Chicago', month: 'short', day: 'numeric',
+            hour: 'numeric', minute: '2-digit',
+          });
+        } catch (_) { return iso; }
+      }
+
+      function fmtPickupDate(ymd) {
+        if (!ymd) return '';
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+        if (!m) return ymd;
+        const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+        return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+      }
+
+      function escapeHtml(s) {
+        return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      }
+
+      async function load() {
+        const t = params.get('t');
+        const url = `/api/order-status?id=${encodeURIComponent(orderId)}${t ? `&t=${encodeURIComponent(t)}` : ''}`;
+        try {
+          const r = await fetch(url, { credentials: 'include' });
+          if (r.status === 401) {
+            location.assign(`/?track=${encodeURIComponent(orderId)}`);
+            return;
+          }
+          if (!r.ok) {
+            root.innerHTML = `<div class="card"><div class="section error-block">Could not load this order.</div></div>`;
+            return;
+          }
+          const data = await r.json();
+          render(data);
+        } catch (err) {
+          root.innerHTML = `<div class="card"><div class="section error-block">Network issue. Try refreshing.</div></div>`;
+        }
+      }
+
+      function render(data) {
+        const { order } = data;
+        const status = order.status || 'paid';
+        const isCanceled = status === 'canceled';
+        const isNoShow = status === 'no-show';
+        const currentStageIdx = STAGES.findIndex(s => s.key === status);
+        const tsByStage = {};
+        for (const e of (order.statusHistory || [])) tsByStage[e.status] = e.ts;
+
+        const visiblePhotos = (order.photos || []).filter(p => !p.hidden);
+        const showPickup = ['ready', 'picked-up'].includes(status) && order.pickupAddress;
+
+        const itemsHtml = (order.lineItems || []).map(li => `
+          <div class="item-row"><span>${escapeHtml(li.name)} × ${escapeHtml(li.quantity)}</span><span class="muted">$${((li.priceCents * Number(li.quantity)) / 100).toFixed(2)}</span></div>
+        `).join('');
+
+        let timelineHtml = '';
+        if (isCanceled) {
+          timelineHtml = `<div class="step canceled"><div class="dot">×</div><div class="step-body"><div class="step-label">Canceled</div><div class="step-meta">${fmtDate(order.canceledAt)} · Refund processing</div></div></div>`;
+        } else if (isNoShow) {
+          timelineHtml = `<div class="step no-show"><div class="dot">!</div><div class="step-body"><div class="step-label">Pickup not yet completed</div><div class="step-meta">Text Maddie at <a href="tel:5045596466">(504) 559-6466</a> to arrange pickup.</div></div></div>`;
+        } else {
+          timelineHtml = STAGES.map((s, i) => {
+            const cls = i < currentStageIdx ? 'complete' : i === currentStageIdx ? 'active' : '';
+            const icon = i < currentStageIdx ? '✓' : (i + 1);
+            return `
+              <div class="step ${cls}">
+                <div class="dot">${icon}</div>
+                <div class="step-body">
+                  <div class="step-label">${escapeHtml(s.label)}</div>
+                  ${tsByStage[s.key] ? `<div class="step-meta">${fmtDate(tsByStage[s.key])}</div>` : ''}
+                </div>
+              </div>`;
+          }).join('');
+        }
+
+        const photoHtml = visiblePhotos.length === 0
+          ? `<p class="muted" style="font-size:14px;margin:0;">Maddie will share photos here as she bakes.</p>`
+          : `<div class="photos">${visiblePhotos.map(p => `
+              <div class="photo" data-url="${escapeHtml(p.url)}">
+                <img src="${escapeHtml(p.url)}" alt="Order photo" loading="lazy" />
+                ${p.caption ? `<div class="photo-caption">${escapeHtml(p.caption)}</div>` : ''}
+              </div>`).join('')}</div>`;
+
+        const pickupHtml = showPickup ? `
+          <div class="pickup-block">
+            <div class="label">Pickup at</div>
+            <div class="body">${escapeHtml(order.pickupAddress)}</div>
+            ${order.pickupDate ? `<div class="label" style="margin-top:10px;">When</div><div class="body">${escapeHtml(fmtPickupDate(order.pickupDate))}${order.pickupTimeNote ? ' · ' + escapeHtml(order.pickupTimeNote) : ''}</div>` : ''}
+          </div>` : '';
+
+        root.innerHTML = `
+          <div class="card">
+            <div class="header">
+              <div class="brand">MJ's Sweets</div>
+              <h1>Order #${escapeHtml(order.orderId.slice(0, 8))}</h1>
+              <div class="sub">${escapeHtml(order.customerFirstName || order.customerName || '')}</div>
+            </div>
+            <div class="section">
+              <h2>Status</h2>
+              <div class="timeline">${timelineHtml}</div>
+            </div>
+            <div class="section">
+              <h2>Photos from Maddie</h2>
+              ${photoHtml}
+            </div>
+            ${showPickup ? `<div class="section"><h2>Pickup details</h2>${pickupHtml}</div>` : ''}
+            <div class="section">
+              <h2>Order summary</h2>
+              ${itemsHtml}
+              <div class="item-row" style="margin-top:8px;font-weight:600;border-top:1px solid var(--border);"><span>Total</span><span>$${((order.totalCents || 0) / 100).toFixed(2)}</span></div>
+              ${order.pickupTimeNote ? `<div class="order-meta" style="margin-top:10px;">${escapeHtml(order.pickupTimeNote)}</div>` : ''}
+            </div>
+            <div class="section">
+              <div class="help-cta">Need to change something? Text Maddie at <a href="tel:5045596466">(504) 559-6466</a>.</div>
+            </div>
+          </div>
+          <p style="text-align:center;color:var(--muted);font-size:12px;padding:8px 16px 32px;">MJ's Sweets · <a href="/">mjs-sweets.com</a></p>
+        `;
+
+        // Wire up photo lightbox
+        root.querySelectorAll('.photo').forEach(p => {
+          p.addEventListener('click', () => openLightbox(p.dataset.url));
+        });
+      }
+
+      load();
+    })();
+  </script>
+</body>
+</html>
