@@ -16,27 +16,119 @@
    'Strawberry': 'POP-STR'
  };
 
- // Pickup-window metadata. Each seasonal product belongs to one of these.
- // Year-round items (cake pops, rice krispies, pretzels) auto-attach to whichever
- // seasonal window is currently open; if none, they fall back to next-available.
- const PICKUP_WINDOWS = {
-   'mothers-day-2026': { label: "Mother's Day",  emoji: '💐', range: 'May 8–10',   pickupDate: '2026-05-10' },
-   'july-4-2026':      { label: '4th of July',   emoji: '🎆', range: 'July 2–4',   pickupDate: '2026-07-04' },
-   'halloween-2026':   { label: 'Halloween',     emoji: '🎃', range: 'Oct 29–31',  pickupDate: '2026-10-31' },
-   'christmas-2026':   { label: 'Christmas',     emoji: '🎄', range: 'Dec 23–25',  pickupDate: '2026-12-25' },
-   'next-available':   { label: 'Next Available Batch', emoji: '🍪', range: "Maddie will text to coordinate pickup", pickupDate: null }
+ // ---------- Auto-rolling holiday dates ----------
+ // Holiday metadata. `kind: 'nth-sunday'` for Mother's Day; `kind: 'fixed'` for the
+ // calendar-date holidays. `rangeDays` is how many days before the pickup date the
+ // pickup-window opens (e.g., May 8–10 = 2 days before).
+ //
+ // Pickup dates roll forward automatically: each holiday's `holidayDate(key)` returns
+ // this year's date if it hasn't passed yet, otherwise next year's. Past `windowId`s
+ // (e.g., `mothers-day-2026`) live forever in already-stored Square Order metadata
+ // and Blob order JSON — those are static labels. Only NEW orders pick up the
+ // computed `mothers-day-{nextYear}`.
+ const HOLIDAY_DEFS = {
+   'mothers-day': { kind: 'nth-sunday', month: 4,  n: 2,    label: "Mother's Day",   emoji: '💐', rangeDays: 2, monthShort: 'May' },
+   'july-4':      { kind: 'fixed',      month: 6,  day: 4,  label: '4th of July',    emoji: '🎆', rangeDays: 2, monthShort: 'July' },
+   'halloween':   { kind: 'fixed',      month: 9,  day: 31, label: 'Halloween',      emoji: '🎃', rangeDays: 2, monthShort: 'Oct' },
+   'christmas':   { kind: 'fixed',      month: 11, day: 25, label: 'Christmas',      emoji: '🎄', rangeDays: 2, monthShort: 'Dec' },
+   'valentines':  { kind: 'fixed',      month: 1,  day: 14, label: "Valentine's Day", emoji: '💌', rangeDays: 2, monthShort: 'Feb' },
  };
+
+ // Returns the date of the Nth Sunday of (year, monthZeroIndexed) at noon local.
+ // Noon avoids DST-shift edge cases that bite midnight construction.
+ function nthSundayOfMonth(year, month, n) {
+   const first = new Date(year, month, 1, 12, 0, 0, 0);
+   const offsetToFirstSunday = (7 - first.getDay()) % 7;
+   return new Date(year, month, 1 + offsetToFirstSunday + (n - 1) * 7, 12, 0, 0, 0);
+ }
+
+ // Returns the next occurrence of (month, day) — this year if pickup-day+1 hasn't
+ // started yet, otherwise next year. The "+1 day" cutoff means the holiday is still
+ // "current" all day on its pickup date (so a customer paying that morning still
+ // sees the right windowId).
+ function nextOccurrence(month, day) {
+   const now = new Date();
+   const thisYear = now.getFullYear();
+   const cutoff = new Date(thisYear, month, day + 1, 0, 0, 0, 0);
+   const targetYear = (TODAY >= cutoff) ? thisYear + 1 : thisYear;
+   return new Date(targetYear, month, day, 12, 0, 0, 0);
+ }
+
+ // Returns the next Mother's Day Date (2nd Sunday of May).
+ function nextMothersDay() {
+   const thisYear = new Date().getFullYear();
+   const candidate = nthSundayOfMonth(thisYear, 4, 2);
+   const cutoff = new Date(candidate.getFullYear(), candidate.getMonth(), candidate.getDate() + 1, 0, 0, 0, 0);
+   return (TODAY >= cutoff) ? nthSundayOfMonth(thisYear + 1, 4, 2) : candidate;
+ }
+
+ // Returns the next Date for any holiday key.
+ function holidayDate(key) {
+   const def = HOLIDAY_DEFS[key];
+   if (!def) return null;
+   if (def.kind === 'nth-sunday') return nextMothersDay();
+   return nextOccurrence(def.month, def.day);
+ }
+
+ // Returns `${key}-${year}` based on the holiday's computed pickup year.
+ function holidayWindowId(key) {
+   const d = holidayDate(key);
+   return d ? `${key}-${d.getFullYear()}` : null;
+ }
+
+ // Returns the ISO date string ('YYYY-MM-DD') for the holiday's pickup date.
+ // Built from local components to avoid UTC-vs-local off-by-one.
+ function holidayDateIso(key) {
+   const d = holidayDate(key);
+   if (!d) return null;
+   const y = d.getFullYear();
+   const m = String(d.getMonth() + 1).padStart(2, '0');
+   const day = String(d.getDate()).padStart(2, '0');
+   return `${y}-${m}-${day}`;
+ }
+
+ // Format a date range like "May 8–10" given the pickup Date and rangeDays.
+ function formatPickupRange(pickupDate, rangeDays) {
+   const start = new Date(pickupDate); start.setDate(pickupDate.getDate() - rangeDays);
+   const monthShort = pickupDate.toLocaleDateString('en-US', { month: 'short' });
+   const startMonthShort = start.toLocaleDateString('en-US', { month: 'short' });
+   if (monthShort === startMonthShort) {
+     return `${monthShort} ${start.getDate()}–${pickupDate.getDate()}`;
+   }
+   // Window straddles a month boundary (e.g., July 2-4 starting in June would be 'June 30–July 4')
+   return `${startMonthShort} ${start.getDate()}–${monthShort} ${pickupDate.getDate()}`;
+ }
+
+ // Resolve a windowId (computed OR legacy) into its display metadata.
+ // Returns null for unknown / stale windowIds — callers prune those from the cart.
+ function getPickupWindow(windowId) {
+   if (windowId === 'next-available') {
+     return { label: 'Next Available Batch', emoji: '🍪', range: "Maddie will text to coordinate pickup", pickupDate: null };
+   }
+   for (const key of Object.keys(HOLIDAY_DEFS)) {
+     if (windowId === holidayWindowId(key)) {
+       const def = HOLIDAY_DEFS[key];
+       const d = holidayDate(key);
+       return {
+         label: def.label,
+         emoji: def.emoji,
+         range: formatPickupRange(d, def.rangeDays),
+         pickupDate: holidayDateIso(key),
+       };
+     }
+   }
+   return null;
+ }
 
  const products = [
  {
  id: 1,
  sku: 'SET-MD',
- windowId: 'mothers-day-2026',
+ holidayKey: 'mothers-day',
  name: "Mother's Day Box",
  cookieLabel: "Mother's Day Cookies",
  desc: "Celebrate Mom with this delightful assortment of 3-inch cookies, featuring beautiful flowers, hearts, and sweet messages like “Best Mom Ever.” A wonderful treat for the whole family to share!",
  price: 40,
- holidayDate: '2026-05-10',
  img: "💐",
  photo: "/mothers_day_dozen.jpg",
  cls: "mothers"
@@ -44,12 +136,11 @@
  {
  id: 6,
  sku: 'MINI-MD',
- windowId: 'mothers-day-2026',
+ holidayKey: 'mothers-day',
  name: "Mother's Day Minis",
  desc: "Brighten her day with our petite, 2-inch flower cookies. Beautifully packaged with a “Happy Mother’s Day” tag, they make the perfect sweet surprise for Mom!",
  price: 6,
  priceUnit: "/4 pack",
- holidayDate: '2026-05-10',
  img: "🌸",
  photo: "/mothers_day_mini.png",
  cls: "minis"
@@ -90,46 +181,56 @@
  {
  id: 2,
  sku: 'SET-JULY4',
- windowId: 'july-4-2026',
+ holidayKey: 'july-4',
  name: "4th of July Set",
  cookieLabel: "4th of July Cookies",
  desc: "Stars, stripes & sparklers",
  price: 40,
- holidayDate: '2026-07-04',
  img: "🎆",
  cls: "july"
  },
  {
  id: 3,
  sku: 'SET-HALLOWEEN',
- windowId: 'halloween-2026',
+ holidayKey: 'halloween',
  name: "Halloween Spooky Set",
  cookieLabel: "Halloween Cookies",
  desc: "Pumpkins, ghosts & black cats",
  price: 40,
- holidayDate: '2026-10-31',
  img: "🎃",
  cls: "summer"
  },
  {
  id: 4,
  sku: 'SET-XMAS',
- windowId: 'christmas-2026',
+ holidayKey: 'christmas',
  name: "Christmas Cookie Box",
  cookieLabel: "Christmas Cookies",
  desc: "Trees, snowflakes & gingerbread",
  price: 40,
- holidayDate: '2026-12-25',
  img: "🎄",
  cls: "fall"
  }
  ];
 
- // Calculate ordering status for each product
- function getOrderStatus(holidayDateStr) {
- const holiday = new Date(holidayDateStr);
- const openDate = new Date(holiday); openDate.setDate(holiday.getDate() - 28); // 4 weeks before
- const pickupClose = new Date(holiday); pickupClose.setDate(holiday.getDate() - 3); // 3 days before
+ // Calculate ordering status for each product. Accepts either a holiday key
+ // ('mothers-day', 'july-4', etc.) OR a legacy ISO date string for backwards
+ // compat with anything in flight that still passes a raw date.
+ function getOrderStatus(holidayKeyOrDate) {
+ let holiday;
+ if (HOLIDAY_DEFS[holidayKeyOrDate]) {
+   holiday = holidayDate(holidayKeyOrDate); // computed Date at noon local
+ } else if (holidayKeyOrDate) {
+   // Legacy: ISO string. Build at noon local to avoid UTC shift.
+   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(holidayKeyOrDate));
+   holiday = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0, 0)
+              : new Date(holidayKeyOrDate);
+ } else {
+   return { state: 'closed', label: 'Orders closed', canOrder: false, badge: 'Sold Out', badgeClass: 'closed' };
+ }
+
+ const openDate = new Date(holiday); openDate.setDate(holiday.getDate() - 28); openDate.setHours(0, 0, 0, 0);
+ const pickupClose = new Date(holiday); pickupClose.setDate(holiday.getDate() - 3); pickupClose.setHours(23, 59, 59, 999);
 
  const fmt = (d) => d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
@@ -264,8 +365,11 @@
  function getActiveSeasonalWindows() {
    const seen = new Set();
    products.forEach(p => {
-     if (!p.windowId || !p.holidayDate) return;
-     if (getOrderStatus(p.holidayDate).canOrder) seen.add(p.windowId);
+     if (!p.holidayKey) return;
+     if (getOrderStatus(p.holidayKey).canOrder) {
+       const wid = holidayWindowId(p.holidayKey);
+       if (wid) seen.add(wid);
+     }
    });
    return Array.from(seen);
  }
@@ -276,7 +380,14 @@
    const active = getActiveSeasonalWindows();
    if (active.length === 0) return 'next-available';
    const soonest = active
-     .map(id => ({ id, date: new Date(PICKUP_WINDOWS[id].pickupDate) }))
+     .map(id => {
+       const win = getPickupWindow(id);
+       const isoDate = win && win.pickupDate;
+       const m = isoDate ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate) : null;
+       const date = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0, 0)
+                      : new Date(8640000000000000); // far future for unknowns
+       return { id, date };
+     })
      .sort((a, b) => a.date - b.date)[0];
    return soonest.id;
  }
@@ -366,7 +477,7 @@
  `;
  }
 
- const status = getOrderStatus(p.holidayDate);
+ const status = getOrderStatus(p.holidayKey);
  const buttonHtml = status.canOrder
  ? `<button class="add-btn" id="btn-${p.id}" onclick="addToCartBySku('${p.sku}')">+ Add</button>`
  : `<button class="add-btn disabled" disabled>${status.state === 'soon' ? 'Coming Soon' : 'Closed'}</button>`;
@@ -416,21 +527,32 @@
  // 3. Upcoming: closed/coming-soon holiday products (compact tiles, info only)
  const featured = products.filter(p => {
  if (p.isCakePop || p.isYearRound) return false;
- const s = getOrderStatus(p.holidayDate);
+ const s = getOrderStatus(p.holidayKey);
  return s.canOrder;
  });
  const addons = products.filter(p => p.isCakePop || p.isYearRound);
  const upcoming = products.filter(p => {
  if (p.isCakePop || p.isYearRound) return false;
- const s = getOrderStatus(p.holidayDate);
+ const s = getOrderStatus(p.holidayKey);
  return !s.canOrder;
  });
 
  document.getElementById('productGrid').innerHTML = featured.map(p => buildCard(p)).join('');
 
- // Render addons in their own compact horizontal grid
+ // Off-season mode: when no seasonal window is currently open for ordering,
+ // collapse the shop section down to just the "Seasonal Sets coming soon!"
+ // tease. The header, the empty product grid, and the year-round addons all
+ // hide. Year-round items become buyable again the moment the next seasonal
+ // window opens (4 weeks before its pickup date).
+ const offSeason = featured.length === 0;
+
+ const shopHeaderEl = document.getElementById('shopHeader');
+ if (shopHeaderEl) shopHeaderEl.style.display = offSeason ? 'none' : '';
+
+ // Render addons — hidden during off-season so the page reads as a "next
+ // season is coming" page rather than a half-empty shop.
  const addonContainer = document.getElementById('addonSection');
- if (addons.length > 0) {
+ if (addons.length > 0 && !offSeason) {
  addonContainer.style.display = 'block';
  document.getElementById('addonGrid').innerHTML = addons.map(p => buildAddonCard(p)).join('');
  } else {
@@ -441,6 +563,17 @@
  if (upcoming.length > 0) {
  upcomingContainer.style.display = 'block';
  document.getElementById('upcomingGrid').innerHTML = upcoming.map(p => buildCard(p, { compact: true })).join('');
+
+ // Swap the upcoming header copy depending on whether anything is currently in-season.
+ const upcomingH3 = document.querySelector('#upcomingSection .upcoming-header h3');
+ const upcomingP  = document.querySelector('#upcomingSection .upcoming-header p');
+ if (offSeason) {
+ if (upcomingH3) upcomingH3.textContent = 'Seasonal Sets coming soon!';
+ if (upcomingP)  upcomingP.textContent = "Mark your calendar — here's what's on the menu next.";
+ } else {
+ if (upcomingH3) upcomingH3.textContent = 'Coming up next';
+ if (upcomingP)  upcomingP.textContent = "Mark your calendar. Here's what's on the menu after this season.";
+ }
  } else {
  upcomingContainer.style.display = 'none';
  }
@@ -480,9 +613,10 @@
    if (!lookup) return;
    const { product, flavor } = lookup;
 
-   const windowId = (product.windowId)
-     ? product.windowId
+   const windowId = product.holidayKey
+     ? holidayWindowId(product.holidayKey)
      : resolveYearRoundWindow();
+   if (!windowId) return; // shouldn't happen, but guard against null
 
    const existing = cart.find(e => e.sku === sku && e.windowId === windowId);
    if (existing) {
@@ -492,7 +626,8 @@
    }
    updateCart();
 
-   const winLabel = PICKUP_WINDOWS[windowId].label;
+   const win = getPickupWindow(windowId);
+   const winLabel = win ? win.label : 'pickup';
    const itemLabel = flavor ? `${flavor} cake pops` : product.name;
    showToast(`✓ ${itemLabel} → ${winLabel} pickup`);
 
@@ -517,6 +652,11 @@
  }
 
  function updateCart() {
+   // Prune cart entries whose windowId no longer matches any current window.
+   // Happens on year-rollover: a cart left open across a holiday boundary
+   // would otherwise reference e.g. mothers-day-2026 after the date rolls.
+   cart = cart.filter(e => getPickupWindow(e.windowId) !== null);
+
    const count = cart.reduce((sum, e) => sum + e.qty, 0);
    document.getElementById('cartCount').textContent = count;
 
@@ -539,15 +679,15 @@
 
    // Render groups in pickup-date order (sooner pickups first)
    const orderedWindowIds = Object.keys(groups).sort((a, b) => {
-     const da = PICKUP_WINDOWS[a].pickupDate;
-     const db = PICKUP_WINDOWS[b].pickupDate;
+     const wa = getPickupWindow(a); const wb = getPickupWindow(b);
+     const da = wa && wa.pickupDate; const db = wb && wb.pickupDate;
      if (!da) return 1;
      if (!db) return -1;
      return new Date(da) - new Date(db);
    });
 
    itemsEl.innerHTML = orderedWindowIds.map(wid => {
-     const win = PICKUP_WINDOWS[wid];
+     const win = getPickupWindow(wid) || { label: 'Pickup', emoji: '🍪', range: '' };
      let subtotal = 0;
      const lineHtml = groups[wid].map(entry => {
        const lookup = getProductBySku(entry.sku);
@@ -653,7 +793,8 @@
    if (items.length === 0) return;
 
    activeCheckoutWindow = windowId;
-   const win = PICKUP_WINDOWS[windowId];
+   const win = getPickupWindow(windowId);
+   if (!win) { console.warn('startCheckout: unknown windowId', windowId); return; }
 
    // Reset modal state
    document.getElementById('checkoutFormView').hidden = false;
@@ -2047,18 +2188,16 @@
    if (!headline || !cta) return;
 
    const openHolidays = products
-     .filter(p => p.holidayDate && !p.isCakePop && !p.isYearRound)
-     .map(p => ({ p, status: getOrderStatus(p.holidayDate) }))
+     .filter(p => p.holidayKey && !p.isCakePop && !p.isYearRound)
+     .map(p => ({ p, status: getOrderStatus(p.holidayKey), date: holidayDate(p.holidayKey) }))
      .filter(({ status }) => status.canOrder)
-     .sort((a, b) => new Date(a.p.holidayDate) - new Date(b.p.holidayDate));
+     .sort((a, b) => a.date - b.date);
 
    if (openHolidays.length === 0) return; // Keep evergreen headline as fallback
 
-   const { p } = openHolidays[0];
+   const { p, date: holiday } = openHolidays[0];
 
-   // Parse holiday as a *local* date so day-counts don't drift with timezone
-   const [y, mo, d] = p.holidayDate.split('-').map(Number);
-   const pickupClose = new Date(y, mo - 1, d - 3);
+   const pickupClose = new Date(holiday); pickupClose.setDate(holiday.getDate() - 3);
    pickupClose.setHours(0, 0, 0, 0);
 
    const msPerDay = 24 * 60 * 60 * 1000;
