@@ -71,10 +71,21 @@
     .next-step-cta { margin-top: 18px; padding: 16px; border-radius: 14px; background: var(--cream); display: flex; flex-direction: column; gap: 10px; }
     .next-step-cta .nsc-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; }
     .next-step-cta .nsc-explainer { font-size: 13px; color: var(--muted); line-height: 1.5; }
-    .next-step-cta .nsc-button { padding: 14px 18px; border-radius: 999px; font-size: 15px; font-weight: 700; cursor: pointer; border: 0; background: var(--pink); color: white; transition: filter 0.15s ease; }
+    .next-step-cta .nsc-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+    .next-step-cta .nsc-button { flex: 1 1 auto; min-width: 200px; padding: 14px 18px; border-radius: 999px; font-size: 14.5px; font-weight: 700; cursor: pointer; border: 0; background: var(--pink); color: white; transition: filter 0.15s ease; }
     .next-step-cta .nsc-button.success { background: var(--success); }
+    .next-step-cta .nsc-button.outline { background: white; color: var(--pink); border: 2px solid var(--pink); }
     .next-step-cta .nsc-button:hover { filter: brightness(1.08); }
     .next-step-cta .nsc-button:disabled { opacity: 0.5; cursor: wait; }
+
+    /* Collapsible photo gallery uses native <details> */
+    details.photos-collapsible { background: white; border-radius: 10px; }
+    details.photos-collapsible summary { cursor: pointer; padding: 10px 14px; font-weight: 600; font-size: 14px; color: var(--text); list-style: none; background: var(--cream); border-radius: 10px; user-select: none; display: flex; align-items: center; gap: 6px; }
+    details.photos-collapsible summary::-webkit-details-marker { display: none; }
+    details.photos-collapsible summary::before { content: '▶'; font-size: 10px; color: var(--muted); transition: transform 0.2s ease; display: inline-block; }
+    details.photos-collapsible[open] summary::before { transform: rotate(90deg); }
+    details.photos-collapsible[open] summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+    details.photos-collapsible .photo-grid { padding: 12px; }
 
     .side-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border); }
     .terminal-banner { background: var(--cream); padding: 16px 18px; border-radius: 14px; border-left: 4px solid var(--success); font-size: 14px; }
@@ -225,13 +236,19 @@
 
       const itemsHtml = (o.lineItems || []).map(li => `<div class="row"><span>${escapeHtml(li.name)} × ${escapeHtml(li.quantity)}</span><span>$${((li.priceCents * Number(li.quantity)) / 100).toFixed(2)}</span></div>`).join('');
 
-      const photosHtml = (o.photos || []).length === 0
-        ? '<p style="color:var(--muted);font-size:13px;margin:0;">No photos yet.</p>'
-        : `<div class="photo-grid">${(o.photos || []).map(p => `
-            <div class="photo-thumb" style="${p.hidden ? 'opacity:0.35;' : ''}">
-              <img src="${escapeHtml(p.url)}" alt="" loading="lazy" />
-              ${!p.hidden ? `<button class="delete-btn" onclick="confirmDeletePhoto('${escapeHtml(p.url)}')" aria-label="Hide photo">×</button>` : ''}
-            </div>`).join('')}</div>`;
+      const photosCount = (o.photos || []).filter(p => !p.hidden).length;
+      const totalPhotosCount = (o.photos || []).length;
+      const photosGridHtml = (o.photos || []).map(p => `
+        <div class="photo-thumb" style="${p.hidden ? 'opacity:0.35;' : ''}">
+          <img src="${escapeHtml(p.url)}" alt="" loading="lazy" />
+          ${!p.hidden ? `<button class="delete-btn" onclick="confirmDeletePhoto('${escapeHtml(p.url)}')" aria-label="Hide photo">×</button>` : ''}
+        </div>`).join('');
+      const photosHtml = totalPhotosCount === 0
+        ? '<p style="color:var(--muted);font-size:13px;margin:0;">No photos sent yet. Upload some via the journey above.</p>'
+        : `<details class="photos-collapsible">
+             <summary>📸 Photos sent (${photosCount}${photosCount !== totalPhotosCount ? ` · ${totalPhotosCount - photosCount} hidden` : ''})</summary>
+             <div class="photo-grid">${photosGridHtml}</div>
+           </details>`;
 
       // Email Activity sections
       const sentHtml = ((o.emails || []).slice().reverse().map(e => `
@@ -336,7 +353,10 @@
           <div class="next-step-cta">
             <div class="nsc-label">Next step</div>
             <div class="nsc-explainer">${escapeHtml(explainer)}</div>
-            <button class="nsc-button ${btnClass}" onclick="${action}" id="nextStepBtn">${label}</button>
+            <div class="nsc-buttons">
+              <button class="nsc-button outline" onclick="openSendModal()" id="uploadPhotosBtn">📷  Upload + send photos to ${escapeHtml(first)}</button>
+              <button class="nsc-button ${btnClass}" onclick="${action}" id="nextStepBtn">${label}</button>
+            </div>
           </div>`;
       })();
 
@@ -392,8 +412,7 @@
           <div class="section">
             <h2>Photos</h2>
             ${photosHtml}
-            ${!terminal ? `<div style="margin-top:12px;"><button class="primary" onclick="openSendModal()" style="font-size:13px;padding:9px 16px;">📷 Upload + send photos to ${escapeHtml(first)}</button></div>` : ''}
-            <p style="font-size:12px;color:var(--muted);margin:8px 0 0;">Photos are uploaded as part of the Send Update flow — that way the customer gets an email with the photos as you upload them. Existing photos can be hidden via the × button (hidden photos stay in already-sent emails but disappear from the customer's tracking page).</p>
+            <p style="font-size:12px;color:var(--muted);margin:8px 0 0;">Upload new photos via the journey section above — that way the customer gets an email with the photos as you upload them. Existing photos can be hidden via the × button (hidden photos stay in already-sent emails but disappear from the customer's tracking page).</p>
           </div>
           ${o.pickupAddress || o.pickupDate ? `
             <div class="section">
@@ -416,6 +435,17 @@
 
       // Show the sticky CTA only if not terminal
       document.getElementById('sendCta').style.display = terminal ? 'none' : 'block';
+
+      // On narrow screens the tracker scrolls horizontally — center on the
+      // current stage so Maddie sees her position immediately without manual
+      // scrolling. No-op when the tracker fits without scrolling.
+      requestAnimationFrame(() => {
+        const wrap = document.querySelector('.tracker-wrap');
+        const cur = wrap && wrap.querySelector('.tracker-stage.current, .tracker-stage.canceled, .tracker-stage.no-show');
+        if (!wrap || !cur) return;
+        const target = cur.offsetLeft - (wrap.clientWidth / 2) + (cur.offsetWidth / 2);
+        wrap.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
+      });
     }
 
     // Send Update modal
