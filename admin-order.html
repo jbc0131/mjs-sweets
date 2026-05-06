@@ -275,28 +275,86 @@
     }
     function closeSendModal() { document.getElementById('sendModal').classList.remove('open'); }
 
+    // Client-side image compression: max 1600px longest side, JPEG q=0.85.
+    // Drops typical iPhone photos from ~5MB to ~600KB-1MB so we stay well
+    // under Vercel's request body limit (~4.5MB default).
+    function compressImage(file, maxDim = 1600, quality = 0.85) {
+      return new Promise((resolve) => {
+        if (!file || !file.type || !file.type.startsWith('image/')) return resolve(file);
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            const scale = maxDim / Math.max(width, height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => {
+            URL.revokeObjectURL(url);
+            if (!blob) return resolve(file);
+            resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
+          }, 'image/jpeg', quality);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+        img.src = url;
+      });
+    }
+
     async function submitSendUpdate(e) {
       e.preventDefault();
-      const fd = new FormData(document.getElementById('sendForm'));
       const btn = document.getElementById('sendSubmit');
       const err = document.getElementById('sendError');
       err.style.display = 'none';
       btn.disabled = true; btn.textContent = 'Sending…';
+
+      // Build FormData manually, compressing image files first.
+      const form = document.getElementById('sendForm');
+      const fd = new FormData();
+      const photoInput = document.getElementById('sendPhotos');
+      const noteInput = document.getElementById('sendNote');
+      const nextStatusInput = document.getElementById('sendNextStatus');
+
       try {
+        if (photoInput.files && photoInput.files.length > 0) {
+          btn.textContent = `Compressing photo 1/${photoInput.files.length}…`;
+          for (let i = 0; i < photoInput.files.length; i++) {
+            btn.textContent = `Compressing photo ${i + 1}/${photoInput.files.length}…`;
+            const compressed = await compressImage(photoInput.files[i]);
+            fd.append('photos', compressed, compressed.name);
+          }
+        }
+        fd.append('note', noteInput.value || '');
+        fd.append('nextStatus', nextStatusInput.value || '');
+        btn.textContent = 'Sending…';
+
+        // Fetch with a 90s safety-net timeout so the UI never hangs forever.
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 90000);
         const r = await fetch('/api/admin-update?action=send-update&id=' + encodeURIComponent(orderId), {
-          method: 'POST', body: fd, credentials: 'include',
+          method: 'POST', body: fd, credentials: 'include', signal: controller.signal,
         });
+        clearTimeout(timer);
+
         const data = await r.json().catch(() => ({}));
         if (!r.ok || !data.ok) {
-          err.textContent = data.error || 'Send failed.'; err.style.display = 'block';
+          err.textContent = data.error || `Send failed (HTTP ${r.status}).`;
+          err.style.display = 'block';
           btn.disabled = false; btn.textContent = 'Send →';
           return;
         }
         closeSendModal();
-        document.getElementById('sendForm').reset();
+        form.reset();
         await load();
-      } catch (_) {
-        err.textContent = 'Network issue.'; err.style.display = 'block';
+      } catch (ex) {
+        const msg = (ex && ex.name === 'AbortError')
+          ? 'Send timed out after 90 seconds. Try fewer/smaller photos.'
+          : (ex && ex.message) ? ex.message : 'Network issue.';
+        err.textContent = msg;
+        err.style.display = 'block';
         btn.disabled = false; btn.textContent = 'Send →';
       }
     }
