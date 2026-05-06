@@ -76,8 +76,12 @@
 
   <script>
     (function() {
+      // Extract orderId from the path (/order/:id) since Vercel's rewrite
+      // is server-side — the browser URL keeps the source path, not the
+      // rewritten destination's ?id= query param.
       const params = new URLSearchParams(location.search);
-      const orderId = params.get('id');
+      const lastSegment = decodeURIComponent((location.pathname || '').split('/').filter(Boolean).pop() || '');
+      const orderId = (lastSegment && !lastSegment.endsWith('.html')) ? lastSegment : params.get('id');
       const root = document.getElementById('root');
       if (!orderId) {
         root.innerHTML = '<div class="card"><div class="section error-block">No order ID in URL.</div></div>';

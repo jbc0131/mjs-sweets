@@ -127,7 +127,8 @@
   </div>
 
   <script>
-    const orderId = decodeURIComponent(location.pathname.split('/').pop() || new URLSearchParams(location.search).get('id') || '');
+    const lastSegment = decodeURIComponent((location.pathname || '').split('/').filter(Boolean).pop() || '');
+    const orderId = (lastSegment && !lastSegment.endsWith('.html')) ? lastSegment : (new URLSearchParams(location.search).get('id') || '');
     let currentOrder = null;
     let currentExpected = [];
     let currentWontFire = [];
