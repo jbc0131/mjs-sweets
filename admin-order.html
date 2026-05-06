@@ -228,7 +228,7 @@
             <h2>Customer</h2>
             <div class="row"><span class="label-text">Name</span><span>${escapeHtml(o.customerName || '')}</span></div>
             <div class="row"><span class="label-text">Email</span><span><a href="mailto:${escapeHtml(o.customerEmail)}">${escapeHtml(o.customerEmail || '')}</a></span></div>
-            <div class="row"><span class="label-text">Phone</span><span><a href="tel:${escapeHtml((o.customerPhone || '').replace(/\\D/g,''))}">${escapeHtml(o.customerPhone || '')}</a></span></div>
+            <div class="row"><span class="label-text">Phone</span><span><a href="tel:${escapeHtml((o.customerPhone || '').replace(/\D/g,''))}">${escapeHtml(o.customerPhone || '')}</a></span></div>
           </div>
           <div class="section">
             <h2>Items</h2>${itemsHtml}
@@ -351,7 +351,7 @@
 
     async function cancelOrder() {
       const sqUrl = 'https://squareup.com/dashboard/orders';
-      if (!confirm('Cancel & refund this order?\\n\\n1. Process the refund in Square dashboard first.\\n2. Then click OK to mark canceled here AND send the customer the refund-confirmation email.\\n\\nClick OK only AFTER you have refunded in Square.')) return;
+      if (!confirm("Cancel & refund this order?\n\n1. Process the refund in Square dashboard first.\n2. Then click OK to mark canceled here AND send the customer the refund-confirmation email.\n\nClick OK only AFTER you have refunded in Square.")) return;
       const r = await fetch('/api/admin-update?action=refund-completed&id=' + encodeURIComponent(orderId), {
         method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({}), credentials: 'include',
       });
@@ -359,7 +359,7 @@
     }
 
     async function confirmDeletePhoto(url) {
-      if (!confirm('Hide this photo?\\n\\nIt was sent in past emails — those emails will still show it.\\nThe customer\\'s tracking page will hide it going forward.')) return;
+      if (!confirm("Hide this photo?\n\nIt was sent in past emails — those emails will still show it.\nThe customer's tracking page will hide it going forward.")) return;
       const r = await fetch('/api/admin-update?action=soft-delete-photo&id=' + encodeURIComponent(orderId), {
         method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ photoUrl: url }), credentials: 'include',
       });
