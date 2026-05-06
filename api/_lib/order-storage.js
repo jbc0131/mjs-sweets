@@ -30,7 +30,10 @@ function emailIndexKey() {
 async function readOrder(orderId) {
   const url = await urlForKey(orderJsonKey(orderId));
   if (!url) return null;
-  const res = await fetch(url, { cache: 'no-store' });
+  // Cache-bust query string defeats any intermediate CDN cache on the public
+  // Blob URL — order JSON is mutable, so we need fresh reads after writes.
+  const fresh = url + (url.includes('?') ? '&' : '?') + '_=' + Date.now();
+  const res = await fetch(fresh, { cache: 'no-store' });
   if (!res.ok) return null;
   try {
     return await res.json();
@@ -58,6 +61,9 @@ async function writeOrder(orderId, order) {
     token: BLOB_TOKEN(),
     addRandomSuffix: false,
     allowOverwrite: true,
+    // Order JSON is mutable — disable CDN caching so reads after writes are fresh.
+    // Photos under orders/{id}/ keep the default cache (immutable, can ride the CDN).
+    cacheControlMaxAge: 0,
   });
   return order;
 }
@@ -118,6 +124,7 @@ async function indexEmail(resendId, orderId) {
     token: BLOB_TOKEN(),
     addRandomSuffix: false,
     allowOverwrite: true,
+    cacheControlMaxAge: 0,
   });
 }
 
