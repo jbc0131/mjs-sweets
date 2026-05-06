@@ -15,7 +15,6 @@
     "api/resend-webhook.js": { "maxDuration": 15 },
     "api/cron-pickup-tomorrow.js": { "maxDuration": 60 },
     "api/cron-pickup-today.js": { "maxDuration": 60 },
-    "api/cron-no-show-check.js": { "maxDuration": 30 },
     "api/cron-post-pickup-review.js": { "maxDuration": 60 },
     "api/cron-maddie-summary.js": { "maxDuration": 60 }
   },
