@@ -340,15 +340,29 @@
           </div>`;
       })();
 
-      const dangerBtns = (() => {
+      // Terminal-state banner (informational) stays in the journey section.
+      const terminalBanner = (() => {
         if (isCanceled) return `<div class="terminal-banner canceled"><h3>✗ Canceled</h3><div>Refund-confirmation email was sent. The order is closed.</div></div>`;
         if (isNoShow) return `<div class="terminal-banner no-show"><h3>⚠️ No-show</h3><div>"Did we miss you?" email was sent. Check in with the customer if you want to reschedule.</div></div>`;
+        return '';
+      })();
+
+      // Destructive actions (Flag No-Show + Cancel & Refund) live in their
+      // own section at the bottom of the page — visually separated from the
+      // happy-path journey so they're not clicked accidentally.
+      const dangerZone = (() => {
+        if (terminal) return ''; // already in a terminal state — no actions to surface
         const buttons = [];
-        if (o.status === 'ready' || o.status === 'picked-up') {
+        if (o.status === 'ready') {
           buttons.push('<button class="secondary" onclick="confirmNoShow()">⚠️ Flag No-Show</button>');
         }
         buttons.push('<button class="danger" onclick="cancelOrder()">✗ Cancel & Refund</button>');
-        return `<div class="side-actions">${buttons.join('')}</div>`;
+        return `
+          <div class="section">
+            <h2 style="color:var(--muted);font-size:14px;text-transform:uppercase;letter-spacing:1px;">Danger zone</h2>
+            <p style="font-size:13px;color:var(--muted);margin:0 0 12px;">These actions affect billing or close the order. They send the customer an email.</p>
+            <div class="side-actions" style="border-top:0;margin-top:0;padding-top:0;">${buttons.join('')}</div>
+          </div>`;
       })();
 
       document.getElementById('root').innerHTML = `
@@ -373,7 +387,7 @@
             <h2>Order journey</h2>
             ${trackerHtml}
             ${nextStepCta}
-            ${dangerBtns}
+            ${terminalBanner}
           </div>
           <div class="section">
             <h2>Photos</h2>
@@ -397,6 +411,7 @@
             <h3 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px;">Won't fire</h3>
             ${wontHtml}
           </div>
+          ${dangerZone}
         </div>`;
 
       // Show the sticky CTA only if not terminal
