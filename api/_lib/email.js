@@ -130,7 +130,7 @@ function buildSendUpdate(order, payload) {
 ${noteBlock}
 ${photosBlock}
 ${ctaButton('See full order →', url)}
-<p style="margin:28px 0 0;padding-top:20px;border-top:1px dashed #F0E2D2;color:#5C4A6B;font-size:14px;">Reply to this email to talk back to Maddie — she'll see it.</p>
+<p style="margin:28px 0 0;padding-top:20px;border-top:1px dashed #F0E2D2;color:#5C4A6B;font-size:14px;">Feel free to reply to this email with any questions or concerns.</p>
 </td></tr>`;
   return { subject, html: shell(subject, body), text: `Update from Maddie\n\n${note}\n\nSee full order: ${url}`, to: order.customerEmail, replyTo: NOTIFY_EMAIL()[0] };
 }
