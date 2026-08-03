@@ -18,9 +18,18 @@
  };
 
  // ---------- Auto-rolling holiday dates ----------
- // Holiday metadata. `kind: 'nth-sunday'` for Mother's Day; `kind: 'fixed'` for the
- // calendar-date holidays. `rangeDays` is how many days before the pickup date the
- // pickup-window opens (e.g., May 8–10 = 2 days before).
+ // Holiday metadata. `kind` is one of:
+ //   'fixed'        — calendar (month, day)
+ //   'nth-sunday'   — Mother's Day (kept as its own kind; resolves via nextMothersDay)
+ //   'nth-weekday'  — (month, n, weekday) e.g. 3rd Saturday of May
+ //   'easter-offset'— Easter (via computeEaster) + offsetDays (Mardi Gras = −47)
+ // `rangeDays` is how many days before the pickup date the pickup-window opens
+ // (e.g., May 8–10 = 2 days before).
+ //
+ // `monthShort` is a static hint only — nothing consumes it for display
+ // (formatPickupRange derives the month from the *computed* pickup date). For the
+ // floating holidays (Easter, and Mardi Gras which trails it) the real month can
+ // land in Feb/Mar/Apr depending on the year, so treat monthShort as approximate.
  //
  // Pickup dates roll forward automatically: each holiday's `holidayDate(key)` returns
  // this year's date if it hasn't passed yet, otherwise next year's. Past `windowId`s
@@ -28,19 +37,51 @@
  // and Blob order JSON — those are static labels. Only NEW orders pick up the
  // computed `mothers-day-{nextYear}`.
  const HOLIDAY_DEFS = {
-   'mothers-day': { kind: 'nth-sunday', month: 4,  n: 2,    label: "Mother's Day",   emoji: '💐', rangeDays: 2, monthShort: 'May' },
-   'july-4':      { kind: 'fixed',      month: 6,  day: 4,  label: '4th of July',    emoji: '🎆', rangeDays: 2, monthShort: 'July' },
-   'halloween':   { kind: 'fixed',      month: 9,  day: 31, label: 'Halloween',      emoji: '🎃', rangeDays: 2, monthShort: 'Oct' },
-   'christmas':   { kind: 'fixed',      month: 11, day: 25, label: 'Christmas',      emoji: '🎄', rangeDays: 2, monthShort: 'Dec' },
-   'valentines':  { kind: 'fixed',      month: 1,  day: 14, label: "Valentine's Day", emoji: '💌', rangeDays: 2, monthShort: 'Feb' },
+   'mothers-day': { kind: 'nth-sunday',   month: 4,  n: 2,             label: "Mother's Day",     emoji: '💐',  rangeDays: 2, monthShort: 'May' },
+   'july-4':      { kind: 'fixed',        month: 6,  day: 4,           label: '4th of July',      emoji: '🎆',  rangeDays: 2, monthShort: 'July' },
+   'halloween':   { kind: 'fixed',        month: 9,  day: 31,          label: 'Halloween',        emoji: '🎃',  rangeDays: 2, monthShort: 'Oct' },
+   'christmas':   { kind: 'fixed',        month: 11, day: 25,          label: 'Christmas',        emoji: '🎄',  rangeDays: 2, monthShort: 'Dec' },
+   'valentines':  { kind: 'fixed',        month: 1,  day: 14,          label: "Valentine's Day",  emoji: '💌',  rangeDays: 2, monthShort: 'Feb' },
+   'mardi-gras':  { kind: 'easter-offset',           offsetDays: -47,  label: 'Mardi Gras',       emoji: '🎭',  rangeDays: 2, monthShort: 'Feb' },
+   'st-patricks': { kind: 'fixed',        month: 2,  day: 17,          label: "St. Patrick's Day", emoji: '☘️', rangeDays: 2, monthShort: 'Mar' },
+   'easter':      { kind: 'easter-offset',           offsetDays: 0,    label: 'Easter',           emoji: '🐰',  rangeDays: 2, monthShort: 'Apr' },
+   'graduation':  { kind: 'nth-weekday',  month: 4,  n: 3, weekday: 6, label: 'Graduation',       emoji: '🎓',  rangeDays: 2, monthShort: 'May' },
  };
 
- // Returns the date of the Nth Sunday of (year, monthZeroIndexed) at noon local.
- // Noon avoids DST-shift edge cases that bite midnight construction.
- function nthSundayOfMonth(year, month, n) {
+ // Returns the date of the Nth `weekday` (0=Sun … 6=Sat) of (year, monthZeroIndexed)
+ // at noon local. Noon avoids DST-shift edge cases that bite midnight construction.
+ // (Generalizes the old nthSundayOfMonth; weekday=0 reproduces it exactly.)
+ function nthWeekdayOfMonth(year, month, n, weekday) {
    const first = new Date(year, month, 1, 12, 0, 0, 0);
-   const offsetToFirstSunday = (7 - first.getDay()) % 7;
-   return new Date(year, month, 1 + offsetToFirstSunday + (n - 1) * 7, 12, 0, 0, 0);
+   const offsetToFirst = (weekday - first.getDay() + 7) % 7;
+   return new Date(year, month, 1 + offsetToFirst + (n - 1) * 7, 12, 0, 0, 0);
+ }
+
+ // Easter Sunday for a Gregorian `year` via the Meeus/Butcher (anonymous Gregorian)
+ // algorithm. Returns the Date at noon local. Drives 'easter-offset' defs.
+ function computeEaster(year) {
+   const a = year % 19;
+   const b = Math.floor(year / 100);
+   const c = year % 100;
+   const d = Math.floor(b / 4);
+   const e = b % 4;
+   const f = Math.floor((b + 8) / 25);
+   const g = Math.floor((b - f + 1) / 3);
+   const h = (19 * a + b - d - g + 15) % 30;
+   const i = Math.floor(c / 4);
+   const k = c % 4;
+   const l = (32 + 2 * e + 2 * i - h - k) % 7;
+   const m = Math.floor((a + 11 * h + 22 * l) / 451);
+   const month = Math.floor((h + l - 7 * m + 114) / 31); // 3 = March, 4 = April
+   const day = ((h + l - 7 * m + 114) % 31) + 1;
+   return new Date(year, month - 1, day, 12, 0, 0, 0);
+ }
+
+ // Add `n` days to a Date, preserving the time-of-day (noon).
+ function addDays(date, n) {
+   const out = new Date(date);
+   out.setDate(out.getDate() + n);
+   return out;
  }
 
  // Returns the next occurrence of (month, day) — this year if pickup-day+1 hasn't
@@ -55,19 +96,36 @@
    return new Date(targetYear, month, day, 12, 0, 0, 0);
  }
 
- // Returns the next Mother's Day Date (2nd Sunday of May).
- function nextMothersDay() {
+ // Roll-forward wrapper for Nth-weekday holidays (Mother's Day, Graduation), using
+ // the same "+1 day after pickup" cutoff as nextOccurrence().
+ function nextNthWeekday(month, n, weekday) {
    const thisYear = new Date().getFullYear();
-   const candidate = nthSundayOfMonth(thisYear, 4, 2);
+   const candidate = nthWeekdayOfMonth(thisYear, month, n, weekday);
    const cutoff = new Date(candidate.getFullYear(), candidate.getMonth(), candidate.getDate() + 1, 0, 0, 0, 0);
-   return (TODAY >= cutoff) ? nthSundayOfMonth(thisYear + 1, 4, 2) : candidate;
+   return (TODAY >= cutoff) ? nthWeekdayOfMonth(thisYear + 1, month, n, weekday) : candidate;
+ }
+
+ // Returns the next Mother's Day Date (2nd Sunday of May) — weekday 0, unchanged behavior.
+ function nextMothersDay() {
+   return nextNthWeekday(4, 2, 0);
+ }
+
+ // Roll-forward wrapper for 'easter-offset' holidays (Easter itself, Mardi Gras),
+ // same "+1 day after pickup" cutoff pattern.
+ function nextEasterOffset(offsetDays) {
+   const thisYear = new Date().getFullYear();
+   const candidate = addDays(computeEaster(thisYear), offsetDays);
+   const cutoff = new Date(candidate.getFullYear(), candidate.getMonth(), candidate.getDate() + 1, 0, 0, 0, 0);
+   return (TODAY >= cutoff) ? addDays(computeEaster(thisYear + 1), offsetDays) : candidate;
  }
 
  // Returns the next Date for any holiday key.
  function holidayDate(key) {
    const def = HOLIDAY_DEFS[key];
    if (!def) return null;
-   if (def.kind === 'nth-sunday') return nextMothersDay();
+   if (def.kind === 'nth-sunday')    return nextMothersDay();
+   if (def.kind === 'nth-weekday')   return nextNthWeekday(def.month, def.n, def.weekday);
+   if (def.kind === 'easter-offset') return nextEasterOffset(def.offsetDays);
    return nextOccurrence(def.month, def.day);
  }
 
@@ -211,6 +269,61 @@
  price: 40,
  img: "🎄",
  cls: "fall"
+ },
+ {
+ id: 9,
+ sku: 'SET-VAL',
+ holidayKey: 'valentines',
+ name: "Valentine's Box",
+ cookieLabel: "Valentine's Cookies",
+ desc: "Hearts, roses & sweet nothings",
+ price: 40,
+ img: "💌",
+ cls: "valentine"
+ },
+ {
+ id: 10,
+ sku: 'SET-MARDI',
+ holidayKey: 'mardi-gras',
+ name: "Mardi Gras Set",
+ cookieLabel: "Mardi Gras Cookies",
+ desc: "King cake purple, green & gold with fleur-de-lis flair",
+ price: 40,
+ img: "🎭",
+ cls: "mardi"
+ },
+ {
+ id: 11,
+ sku: 'SET-EASTER',
+ holidayKey: 'easter',
+ name: "Easter Basket Box",
+ cookieLabel: "Easter Cookies",
+ desc: "Bunnies, eggs & pastel blooms",
+ price: 40,
+ img: "🐰",
+ cls: "easter"
+ },
+ {
+ id: 12,
+ sku: 'SET-STPAT',
+ holidayKey: 'st-patricks',
+ name: "St. Patrick's Set",
+ cookieLabel: "St. Patrick's Cookies",
+ desc: "Shamrocks, rainbows & pots of gold",
+ price: 40,
+ img: "☘️",
+ cls: "stpat"
+ },
+ {
+ id: 13,
+ sku: 'SET-GRAD',
+ holidayKey: 'graduation',
+ name: "Graduation Set",
+ cookieLabel: "Graduation Cookies",
+ desc: "Caps, diplomas & “Class of” cookies in your school colors",
+ price: 40,
+ img: "🎓",
+ cls: "grad"
  }
  ];
 

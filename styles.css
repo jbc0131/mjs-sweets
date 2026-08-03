@@ -412,6 +412,11 @@
  .product-img.july { background: linear-gradient(135deg, #4D96FF, #FF6B9D); }
  .product-img.summer { background: linear-gradient(135deg, #FFD93D, #FF8C61); }
  .product-img.fall { background: linear-gradient(135deg, #FF8C61, #C71F37); }
+ .product-img.valentine { background: linear-gradient(135deg, #FFD1DC, #FF4D6D); }
+ .product-img.mardi { background: linear-gradient(135deg, #7B2FBE, #2FA84F, #FFC72C); }
+ .product-img.easter { background: linear-gradient(135deg, #FDE2F3, #FFF6C3, #C9F0D8); }
+ .product-img.stpat { background: linear-gradient(135deg, #7BE495, #157A3C); }
+ .product-img.grad { background: linear-gradient(135deg, #1F2A5A, #E0B84C); }
  .product-img.cakepops {
  background: linear-gradient(135deg, #FFD6E0, #FFD93D, #6BCB77, #4D96FF);
  background-size: 200% 200%;
@@ -676,6 +681,11 @@
  .product-img-compact.july { background: linear-gradient(135deg, #4D96FF, #FF6B9D); }
  .product-img-compact.summer { background: linear-gradient(135deg, #FFD93D, #FF8C61); }
  .product-img-compact.fall { background: linear-gradient(135deg, #FF8C61, #C71F37); }
+ .product-img-compact.valentine { background: linear-gradient(135deg, #FFD1DC, #FF4D6D); }
+ .product-img-compact.mardi { background: linear-gradient(135deg, #7B2FBE, #2FA84F, #FFC72C); }
+ .product-img-compact.easter { background: linear-gradient(135deg, #FDE2F3, #FFF6C3, #C9F0D8); }
+ .product-img-compact.stpat { background: linear-gradient(135deg, #7BE495, #157A3C); }
+ .product-img-compact.grad { background: linear-gradient(135deg, #1F2A5A, #E0B84C); }
 
  .product-body-compact {
  padding: 0.65rem 0.85rem 0.85rem;
