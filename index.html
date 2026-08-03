@@ -100,7 +100,7 @@
  <div class="section-header" id="shopHeader">
  <div class="section-eyebrow">~ what's in season ~</div>
  <h2 class="section-title">Order our <em>seasonal</em> sets</h2>
- <p class="section-sub">Pre-decorated, packaged, and ready to grab. Don't forget to add cake pops to round out your order!</p>
+ <p class="section-sub">Pre-decorated, packaged, and ready to grab. Don't forget to add cakesicles to round out your order!</p>
  </div>
  <div class="product-grid" id="productGrid">
  <!-- Featured products inject via JS -->
@@ -328,20 +328,20 @@
  </div>
 
  <div class="addon-row" data-addon-key="cake-pops" data-needs-flavor="true">
- <button type="button" class="addon-thumb" aria-label="View larger photo of Cake Pops"
-   onclick="openTierLightbox(event, '/cake_pops.png', 'Cake Pops by MJ’s Sweets', 'Cake pops, hand-decorated and made from scratch')">
- <img src="/cake_pops.webp" alt="Cake Pops" loading="lazy" decoding="async" />
+ <button type="button" class="addon-thumb" aria-label="View larger photo of Cakesicles"
+   onclick="openTierLightbox(event, '/cakesicles_vanilla.jpg', 'Cakesicles by MJ’s Sweets', 'Cakesicles, hand-dipped and made from scratch')">
+ <img src="/cakesicles_vanilla.webp" alt="Cakesicles" loading="lazy" decoding="async" />
  <span class="tier-card-thumb-zoom" aria-hidden="true">⤢</span>
  </button>
  <div class="addon-row-body">
  <label class="addon-toggle">
  <input type="checkbox" class="addon-check" id="addonCakePopsCheck" data-key="cake-pops" />
- <span class="addon-name">Cake Pops</span>
- <span class="addon-price">$24/dz</span>
+ <span class="addon-name">Cakesicles</span>
+ <span class="addon-price">$36/dz</span>
  </label>
- <p class="addon-row-desc">100x better than big box stores. Pick your flavor!</p>
+ <p class="addon-row-desc">Cake &amp; frosting hand-dipped in a chocolate shell, on a stick — poppable and extra pretty. Pick your flavor!</p>
  <div class="addon-controls" hidden>
- <select class="addon-flavor" id="addonCakePopsFlavor" aria-label="Cake pop flavor">
+ <select class="addon-flavor" id="addonCakePopsFlavor" aria-label="Cakesicle flavor">
  <option value="">Pick a flavor…</option>
  <option value="POP-CHOC">Chocolate</option>
  <option value="POP-VAN">Vanilla</option>
@@ -350,7 +350,7 @@
  <option value="POP-LEM">Lemon</option>
  <option value="POP-STR">Strawberry</option>
  </select>
- <div class="tier-qty-stepper" role="group" aria-label="Cake pop quantity in dozens">
+ <div class="tier-qty-stepper" role="group" aria-label="Cakesicle quantity in dozens">
  <button type="button" class="tier-qty-btn" data-action="addon-minus" data-key="cake-pops" aria-label="Decrease">−</button>
  <input type="number" class="addon-qty-input" id="addonCakePopsQty" data-key="cake-pops" min="1" max="10" step="1" value="1" inputmode="numeric" />
  <button type="button" class="tier-qty-btn" data-action="addon-plus" data-key="cake-pops" aria-label="Increase">+</button>
@@ -586,7 +586,7 @@
 <!-- FLAVOR PICKER MODAL -->
 <div class="flavor-modal" id="flavorModal">
  <div class="flavor-box">
- <h3>Pick your cake pop flavor</h3>
+ <h3>Pick your cakesicle flavor</h3>
  <p class="flavor-sub">Choose one flavor per dozen, mix & match by adding multiple to your cart!</p>
  <div class="flavor-grid" id="flavorGrid"></div>
  <div class="flavor-actions">
@@ -930,15 +930,15 @@ async function submitTrackOrder(e) {
       "position": 1,
       "item": {
         "@type": "Product",
-        "name": "Cake Pops",
-        "description": "Hand-decorated cake pops on a stick, made from scratch and dressed up. Choose your flavor: Chocolate, Vanilla, Funfetti, Red Velvet, Lemon, or Strawberry. Sold by the dozen.",
-        "image": "https://www.mjs-sweets.com/cake_pops.png",
+        "name": "Cakesicles",
+        "description": "Cake and frosting hand-dipped in a chocolate shell on a stick, made from scratch and dressed up. Choose your flavor: Chocolate, Vanilla, Funfetti, Red Velvet, Lemon, or Strawberry. Sold by the dozen.",
+        "image": "https://www.mjs-sweets.com/cakesicles_vanilla.jpg",
         "url": "https://www.mjs-sweets.com/#cake-pops",
         "brand": { "@type": "Brand", "name": "MJ's Sweets" },
         "category": "Dessert",
         "offers": {
           "@type": "Offer",
-          "price": "24.00",
+          "price": "36.00",
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
           "url": "https://www.mjs-sweets.com/#cake-pops",

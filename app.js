@@ -6,7 +6,8 @@
    return d;
  })();
 
- // Flavor → Square SKU map for cake pop variations
+ // Flavor → Square SKU map for cakesicle variations (SKUs kept as POP-* —
+ // the Square catalog items are renamed/repriced in-place, not recreated)
  const FLAVOR_SKUS = {
    'Chocolate':  'POP-CHOC',
    'Vanilla':    'POP-VAN',
@@ -147,11 +148,11 @@
  },
  {
  id: 5,
- name: "Cake Pops",
- desc: "100x better than big box stores. Pick your flavor!",
- price: 24,
+ name: "Cakesicles",
+ desc: "Cake & frosting hand-dipped in a chocolate shell, on a stick — poppable and extra pretty. Pick your flavor!",
+ price: 36,
  img: "🍭",
- photo: "/cake_pops.png",
+ photo: "/cakesicles_vanilla.jpg",
  cls: "cakepops",
  isCakePop: true,
  flavors: ['Chocolate', 'Vanilla', 'Funfetti', 'Red Velvet', 'Lemon', 'Strawberry']
@@ -263,7 +264,8 @@
  // (eliminates Cumulative Layout Shift, a Core Web Vitals factor).
  // Keyed by absolute path; values are [width, height] in pixels.
  const IMAGE_DIMS = {
-   '/cake_pops.png': [511, 488],
+   '/cakesicles_chocolate.jpg': [1207, 1600],
+   '/cakesicles_vanilla.jpg': [1200, 1600],
    '/maddie-mjs-sweets-baker.jpg': [705, 999],
    '/portfolio/baby-shower/baby-shower-cookies-elephant-lavender.jpg': [1366, 1600],
    '/portfolio/baby-shower/baby-shower-cookies-here-comes-the-sun.jpg': [1600, 1248],
@@ -638,7 +640,7 @@
 
    const win = getPickupWindow(windowId);
    const winLabel = win ? win.label : 'pickup';
-   const itemLabel = flavor ? `${flavor} cake pops` : product.name;
+   const itemLabel = flavor ? `${flavor} cakesicles` : product.name;
    showToast(`✓ ${itemLabel} → ${winLabel} pickup`);
 
    // Visual ack on the source button (only present for non-cake-pop adds)
@@ -1137,8 +1139,8 @@
  // Prices here are display-only; server validates against Square Catalog.
  const ADDON_DEFS = {
    'cake-pops': {
-     label: 'Cake Pops',
-     priceCents: 2400,
+     label: 'Cakesicles',
+     priceCents: 3600,
      needsFlavor: true,
      checkId: 'addonCakePopsCheck',
      qtyInputId: 'addonCakePopsQty',
@@ -1795,7 +1797,7 @@
    if (cakePopsCheck?.checked) {
      const flavorSel = document.getElementById('addonCakePopsFlavor');
      if (!flavorSel?.value) {
-       return showError('Please pick a cake pop flavor (or uncheck Cake Pops).', flavorSel);
+       return showError('Please pick a cakesicle flavor (or uncheck Cakesicles).', flavorSel);
      }
    }
    const addons = getSelectedAddons();
