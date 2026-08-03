@@ -1447,6 +1447,16 @@
  color: var(--ink);
  flex: 1;
  }
+ /* Short tagline mirrored from the main shop addon descriptions, so the
+    custom-order add-ons aren't just naked names + prices. */
+ .addon-row-desc {
+ margin: 0;
+ padding-left: 1.7rem; /* aligns with the name column past the checkbox */
+ font-family: 'DM Sans', sans-serif;
+ font-size: 0.85rem;
+ color: var(--muted, #5C4A6B);
+ line-height: 1.4;
+ }
  .addon-price {
  font-family: 'Fraunces', serif;
  font-size: 1rem;
