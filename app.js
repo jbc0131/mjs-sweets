@@ -232,7 +232,14 @@
  const openDate = new Date(holiday); openDate.setDate(holiday.getDate() - 28); openDate.setHours(0, 0, 0, 0);
  const pickupClose = new Date(holiday); pickupClose.setDate(holiday.getDate() - 3); pickupClose.setHours(23, 59, 59, 999);
 
- const fmt = (d) => d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+ // Include the year only when the date lands in a later calendar year than
+ // today, so a spring-2027 open date reads "April 11, 2027" while an in-year
+ // date stays "October 3".
+ const fmt = (d) => {
+   const opts = { month: 'long', day: 'numeric' };
+   if (d.getFullYear() > TODAY.getFullYear()) opts.year = 'numeric';
+   return d.toLocaleDateString('en-US', opts);
+ };
 
  if (TODAY < openDate) {
  return { state: 'soon', label: `Opens ${fmt(openDate)}`, canOrder: false, badge: 'Coming Soon', badgeClass: 'soon' };
@@ -535,7 +542,10 @@
  if (p.isCakePop || p.isYearRound) return false;
  const s = getOrderStatus(p.holidayKey);
  return !s.canOrder;
- });
+ })
+ // Show soonest-first by each product's next pickup date so the tease reads
+ // in calendar order (e.g., Halloween before next year's Mother's Day).
+ .sort((a, b) => holidayDate(a.holidayKey) - holidayDate(b.holidayKey));
 
  document.getElementById('productGrid').innerHTML = featured.map(p => buildCard(p)).join('');
 
