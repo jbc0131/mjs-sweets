@@ -540,6 +540,14 @@
  justify-content: center;
  font-size: 3rem;
  }
+ /* Same <picture> fill fix as .product-img — see comment above .product-img picture. */
+ .addon-img picture {
+ display: flex;
+ width: 100%;
+ height: 100%;
+ align-items: center;
+ justify-content: center;
+ }
  .addon-img.cakepops {
  background: linear-gradient(135deg, #FFD6E0, #FFD93D, #6BCB77, #4D96FF);
  background-size: 200% 200%;
@@ -652,6 +660,17 @@
  font-size: 1.9rem;
  border-radius: 18px 18px 0 0;
  filter: grayscale(0.3);
+ overflow: hidden;
+ }
+ /* Same <picture> fill fix as .product-img: without it, a photo's inner <img>
+    width/height: 100% resolve against picture's intrinsic size and overflow
+    this 72px header into the title row (hit by the Mother's Day tiles). */
+ .product-img-compact picture {
+ display: flex;
+ width: 100%;
+ height: 100%;
+ align-items: center;
+ justify-content: center;
  }
  .product-img-compact.mothers { background: linear-gradient(135deg, #FFD6E0, #FF6B9D); }
  .product-img-compact.july { background: linear-gradient(135deg, #4D96FF, #FF6B9D); }
@@ -1843,6 +1862,15 @@
  justify-content: center;
  font-size: 1.8rem;
  flex-shrink: 0;
+ overflow: hidden;
+ }
+ /* Same <picture> fill fix as .product-img — see comment above .product-img picture. */
+ .cart-item-img picture {
+ display: flex;
+ width: 100%;
+ height: 100%;
+ align-items: center;
+ justify-content: center;
  }
  .cart-item-info { flex: 1; }
  .cart-item-name { font-weight: 600; margin-bottom: 0.2rem; font-size: 0.95rem; }
